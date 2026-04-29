@@ -25,6 +25,7 @@ enum class PodcastViewMode(val columns: Int, val label: String) {
 
 data class HomeUiState(
     val subscribedPodcasts: List<Podcast>  = emptyList(),
+    val suggestedPodcasts:  List<Podcast>  = emptyList(),
     val searchResults:      List<Podcast>  = emptyList(),
     val searchQuery:        String         = "",
     val isSearching:        Boolean        = false,
@@ -59,6 +60,9 @@ class HomeViewModel @Inject constructor(
                     // Only update from DB if not currently reordering
                     if (!_uiState.value.isEditMode) {
                         _uiState.update { it.copy(subscribedPodcasts = podcasts) }
+                        if (podcasts.isEmpty() && _uiState.value.suggestedPodcasts.isEmpty()) {
+                            loadSuggestions()
+                        }
                     }
                 }
         }
@@ -166,6 +170,26 @@ class HomeViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.update { it.copy(error = e.message, isSearching = false) }
                 }
+        }
+    }
+
+    private fun loadSuggestions() {
+        viewModelScope.launch {
+            // Curated list for the "Nothing" community
+            val suggestions = listOf(
+                "Digitalia",
+                "Waveform: The MKBHD Podcast",
+                "The Vergecast",
+                "Nothing Podcast",
+                "The Futur with Chris Do",
+                "TED Talks Daily"
+            )
+            
+            val results = suggestions.mapNotNull { query ->
+                runCatching { podcastRepository.searchPodcasts(query).firstOrNull() }.getOrNull()
+            }.distinctBy { it.id }
+            
+            _uiState.update { it.copy(suggestedPodcasts = results) }
         }
     }
 

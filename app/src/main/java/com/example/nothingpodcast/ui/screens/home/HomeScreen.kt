@@ -180,16 +180,61 @@ fun HomeScreen(
             // ── Podcast list / grid ───────────────────────────────────────
             when {
                 uiState.subscribedPodcasts.isEmpty() -> {
-                    Box(
-                        modifier         = Modifier.fillMaxSize().padding(40.dp),
-                        contentAlignment = Alignment.Center
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 96.dp)
                     ) {
-                        Text(
-                            text      = stringResource(R.string.label_no_podcasts),
-                            style     = MaterialTheme.typography.bodyMedium,
-                            color     = NothingOnSurfaceDim,
-                            textAlign = TextAlign.Center
-                        )
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 32.dp)
+                            ) {
+                                Text(
+                                    text = "Inizia la tua esperienza",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = NothingWhite,
+                                    fontFamily = SpaceMonoFamily
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "Scopri alcuni dei podcast più amati dalla community o cercali cliccando il tasto +",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = NothingOnSurfaceDim
+                                )
+                            }
+                        }
+                        
+                        item {
+                            Text(
+                                text = "SCELTI PER TE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = NothingOnSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                                letterSpacing = 2.sp
+                            )
+                        }
+                        
+                        if (uiState.suggestedPodcasts.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.dp)
+                                }
+                            }
+                        } else {
+                            items(uiState.suggestedPodcasts) { podcast ->
+                                SearchResultItem(
+                                    podcast = podcast,
+                                    isSubscribed = false,
+                                    onSubscribe = { viewModel.subscribeToPodcast(podcast) },
+                                    onClick = { onPodcastClick(podcast.id) }
+                                )
+                                HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
+                            }
+                        }
                     }
                 }
                 uiState.viewMode == PodcastViewMode.LIST -> {
