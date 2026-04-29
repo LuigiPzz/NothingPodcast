@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="8dp"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/simple_text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Podcast Title"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:maxLines="2" />
+
+    <TextView
+        android:id="@+id/simple_text_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:00 / 00:00"
+        android:textColor="#9A9690"
+        android:textSize="11sp"
+        android:layout_marginTop="4dp" />
+
+    <ImageView
+        android:id="@+id/simple_progress_image"
+        android:layout_width="match_parent"
+        android:layout_height="18dp"
+        android:layout_marginTop="12dp"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="20dp">
+
+        <!-- Skip Backward -->
+        <ImageView
+            android:id="@+id/simple_btn_back"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="2dp"
+            android:src="@drawable/widget_dot_skip_backward"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+        <!-- Play/Pause Container -->
+        <FrameLayout
+            android:id="@+id/simple_btn_play_container"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="6dp">
+            <ImageView
+                android:id="@+id/simple_btn_play"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/widget_dot_play" />
+        </FrameLayout>
+
+        <!-- Skip Forward -->
+        <ImageView
+            android:id="@+id/simple_btn_forward"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="2dp"
+            android:src="@drawable/widget_dot_skip_forward"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    </LinearLayout>
+
+</LinearLayout>

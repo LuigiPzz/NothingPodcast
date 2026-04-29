@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="16dp">
+
+    <!-- Header info -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/podcast_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NOTHING PODCAST"
+                android:textColor="#9A9690"
+                android:textSize="10sp"
+                android:fontFamily="monospace" />
+            <TextView
+                android:id="@+id/episode_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pronto all'ascolto"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/current_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <!-- Visualizer and controls -->
+    <LinearLayout
+        android:id="@+id/controls_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <ImageView android:layout_width="3dp" android:layout_height="12dp" android:background="#FFFFFF" android:layout_margin="1dp"/>
+            <ImageView android:layout_width="3dp" android:layout_height="20dp" android:background="#FFFFFF" android:layout_margin="1dp"/>
+            <ImageView android:layout_width="3dp" android:layout_height="16dp" android:background="#3A3835" android:layout_margin="1dp"/>
+            <ImageView android:layout_width="3dp" android:layout_height="24dp" android:background="#3A3835" android:layout_margin="1dp"/>
+        </LinearLayout>
+
+        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+
+        <ImageView
+            android:id="@+id/btn_skip_back"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_nothing_skip_back" />
+
+        <FrameLayout
+            android:id="@+id/btn_play_pause_container"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@android:color/white">
+            <ImageView
+                android:id="@+id/btn_play_pause"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_nothing_pause_black" />
+        </FrameLayout>
+
+        <ImageView
+            android:id="@+id/btn_skip_forward"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_nothing_skip_forward" />
+    </LinearLayout>
+
+    <!-- Signature Red Dot -->
+    <ImageView
+        android:layout_width="6dp"
+        android:layout_height="6dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:background="#FF3C3C" />
+
+</RelativeLayout>

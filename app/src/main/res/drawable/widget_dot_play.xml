@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="92dp"
+    android:height="92dp"
+    android:viewportWidth="92"
+    android:viewportHeight="92">
+    
+    <!-- Outer thin circle (Centered at 46,46) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.1"
+        android:pathData="M46,46m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0" />
+
+    <!-- Play triangle made of dots (Shifted X by +3.0 to the RIGHT to balance optically) -->
+    <!-- Column 0 (5 dots) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M34,31m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M34,38.5m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M34,46m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M34,53.5m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M34,61m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    
+    <!-- Column 1 (4 dots) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M41.5,34.75m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M41.5,42.25m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M41.5,49.75m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M41.5,57.25m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    
+    <!-- Column 2 (3 dots) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M49,38.5m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M49,46m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M49,53.5m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    
+    <!-- Column 3 (2 dots) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M56.5,42.25m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M56.5,49.75m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+    
+    <!-- Column 4 (1 dot) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M64,46m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
+</vector>

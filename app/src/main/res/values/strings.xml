@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nothing Podcast</string>
+
+    <!-- Headers (Nothing Style - English All Caps) -->
+    <string name="header_settings">Settings</string>
+    <string name="header_downloads">Download</string>
+    <string name="header_now_playing">Now playing</string>
+    <string name="header_in_riproduzione">In riproduzione</string>
+    <string name="header_notifications">Notifications</string>
+    <string name="header_playback">Playback</string>
+    <string name="header_about">Informazioni</string>
+    <string name="header_opml">OPML</string>
+    <string name="setting_opml_export_title">Esporta in OPML</string>
+    <string name="setting_opml_export_desc">Salva le tue iscrizioni in un file per usarle altrove.</string>
+    <string name="setting_opml_import_title">Importa OPML</string>
+    <string name="setting_opml_import_desc">Aggiungi podcast da un file OPML esistente.</string>
+    <string name="header_speed">Speed</string>
+    <string name="header_view_mode">Visualizzazione</string>
+    <string name="header_grid_options">Opzioni griglia</string>
+
+    <!-- Content & Labels (Italian) -->
+    <string name="label_subscriptions">Iscrizioni</string>
+    <string name="label_episodes">Episodi</string>
+    <string name="label_episode_notes">Note episodio</string>
+    <string name="label_chapters">Capitoli</string>
+    <string name="label_no_podcasts">Nessun podcast.\nPremi + per cercare e iscriverti.</string>
+    <string name="label_no_downloads">Nessun download presente.</string>
+    <string name="label_search_placeholder">Cerca titolo o autore…</string>
+    <string name="label_add_podcast">Aggiungi podcast</string>
+    <string name="label_account">ACCOUNT</string>
+    <string name="label_ospite">OSPITE</string>
+    <string name="label_show_name">Mostra nome</string>
+    <string name="label_subscribed">Iscritto</string>
+    <string name="label_add">Aggiungi</string>
+
+    <!-- Actions -->
+    <string name="action_sign_out">Esci</string>
+    <string name="action_settings">Impostazioni</string>
+    <string name="action_downloads">Download</string>
+    <string name="action_back">Indietro</string>
+    <string name="action_mark_played">Contrassegna come riprodotto</string>
+    <string name="action_mark_unplayed">Segna come non letto</string>
+    <string name="action_delete_download">Elimina download</string>
+    <string name="action_refresh">Aggiorna</string>
+    <string name="action_multi_selection">Selezione multipla</string>
+    <string name="action_select_all">Seleziona tutti</string>
+    <string name="action_mark_selected_played">Segna come letti</string>
+    <string name="action_mark_selected_unplayed">Segna come non letti</string>
+    <string name="action_close">Chiudi</string>
+    <string name="action_unsubscribe">Disiscrivi</string>
+    <string name="action_stream">Riproduci in streaming</string>
+    <string name="label_no_downloads_empty">NO DOWNLOADS YET.</string>
+</resources>

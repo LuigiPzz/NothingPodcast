@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.NothingPodcast" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/nothing_anthracite</item>
+        <item name="android:statusBarColor">@color/nothing_anthracite</item>
+        <item name="android:navigationBarColor">@color/nothing_anthracite</item>
+    </style>
+</resources>
