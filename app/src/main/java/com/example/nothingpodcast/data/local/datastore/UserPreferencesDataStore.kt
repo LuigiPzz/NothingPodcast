@@ -67,7 +67,7 @@ class UserPreferencesDataStore @Inject constructor(
         .map { it[Keys.LOGGING_ENABLED] ?: false }
 
     val episodeFilter: Flow<String> = context.dataStore.data
-        .map { it[Keys.EPISODE_FILTER] ?: "ALL" }
+        .map { it[Keys.EPISODE_FILTER] ?: "UNPLAYED" }
 
     val episodeSort: Flow<String> = context.dataStore.data
         .map { it[Keys.EPISODE_SORT] ?: "DATE_DESC" }

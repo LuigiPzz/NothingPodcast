@@ -16,4 +16,15 @@ class NothingPodcastApplication : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+        com.example.nothingpodcast.util.NotificationHelper.createNotificationChannels(this)
+    }
+
+    companion object {
+        lateinit var instance: NothingPodcastApplication
+            private set
+    }
 }

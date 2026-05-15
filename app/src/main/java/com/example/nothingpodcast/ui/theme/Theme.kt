@@ -85,12 +85,21 @@ fun NothingPodcastTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = NothingBlack.toArgb()
-            window.navigationBarColor = NothingBlack.toArgb()
-            WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
+            val context = view.context
+            var currentContext = context
+            while (currentContext is android.content.ContextWrapper) {
+                if (currentContext is Activity) break
+                currentContext = currentContext.baseContext
+            }
+            
+            val activity = currentContext as? Activity
+            activity?.window?.let { window ->
+                window.statusBarColor = NothingBlack.toArgb()
+                window.navigationBarColor = NothingBlack.toArgb()
+                WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = false
+                    isAppearanceLightNavigationBars = false
+                }
             }
         }
     }

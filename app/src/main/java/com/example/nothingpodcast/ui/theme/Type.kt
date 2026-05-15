@@ -1,9 +1,10 @@
 package com.example.nothingpodcast.ui.theme
 
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.Font as GoogleFontRes
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Typography
@@ -13,10 +14,10 @@ import com.example.nothingpodcast.R
 /**
  * Nothing Tech typography system.
  *
- * Nothing X uses NDot (proprietary dot-matrix font) for display/titles and
- * a clean sans-serif for body text. We replicate this with:
- *  - Space Mono  → NDot substitute (dot-matrix/monospace retro feel)
- *  - Outfit      → Clean sans-serif for body & lists
+ * Hierarchy (replicates Nothing OS usage):
+ *  - NType82   → Display & Headline: grandi titoli schermo (es. "Nothing Podcast", "IMPOSTAZIONI")
+ *  - Outfit     → Title & Body: nomi podcast, titoli episodi, testi descrittivi
+ *  - SpaceMono  → Label: timestamp, badge, chip, info tecniche monospace
  */
 private val provider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
@@ -24,80 +25,79 @@ private val provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-// Space Mono — NDot replacement (titles, numbers, headers)
-private val SpaceMonoFont = GoogleFont("Space Mono")
-val SpaceMonoFamily = FontFamily(
-    Font(googleFont = SpaceMonoFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = SpaceMonoFont, fontProvider = provider, weight = FontWeight.Bold),
+// NType82 — Official Nothing Brand Font (display only)
+val NType82Family = FontFamily(
+    Font(R.font.ntype82_regular, FontWeight.Normal),
+    Font(R.font.ntype82_regular, FontWeight.Bold)
 )
 
 val PlayfairFamily = FontFamily.Serif
 
-// Outfit — clean body text
-private val OutfitFont = GoogleFont("Outfit")
-val OutfitFamily = FontFamily(
-    Font(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Light),
-    Font(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Bold),
+// SpaceMono — Monospace for technical labels (timestamps, badges)
+private val SpaceMonoFont = GoogleFont("Space Mono")
+val SpaceMonoFamily = FontFamily(
+    GoogleFontRes(googleFont = SpaceMonoFont, fontProvider = provider, weight = FontWeight.Normal),
+    GoogleFontRes(googleFont = SpaceMonoFont, fontProvider = provider, weight = FontWeight.Bold),
 )
 
-/**
- * Nothing OS-inspired typography scale.
- *
- * Display / Headline  → SpaceMono (dot-matrix feel, NDot substitute)
- * Body / Label        → Outfit (clean, modern)
- * Letter spacing on uppercase sections matches Nothing X section headers.
- */
+// Outfit — Clean sans-serif for body & content titles
+private val OutfitFont = GoogleFont("Outfit")
+val OutfitFamily = FontFamily(
+    GoogleFontRes(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Light),
+    GoogleFontRes(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Normal),
+    GoogleFontRes(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Medium),
+    GoogleFontRes(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.SemiBold),
+    GoogleFontRes(googleFont = OutfitFont, fontProvider = provider, weight = FontWeight.Bold),
+)
+
 val NothingTypography = Typography(
-    // Large screen title (e.g. player screen, big numbers)
+    // ── Display: grandi titoli schermata (NType82) ────────────────────────
     displayLarge = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Bold,
         fontSize = 52.sp,
         lineHeight = 60.sp,
         letterSpacing = (-1).sp
     ),
     displayMedium = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Bold,
         fontSize = 40.sp,
         lineHeight = 48.sp,
         letterSpacing = (-0.5).sp
     ),
     displaySmall = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Normal,
         fontSize = 32.sp,
         lineHeight = 40.sp,
         letterSpacing = 0.sp
     ),
 
-    // Screen/section headings — Nothing X uses these in ALL-CAPS with tracking
+    // ── Headline: intestazioni sezione ALL-CAPS (NType82) ─────────────────
     headlineLarge = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
         letterSpacing = 2.sp
     ),
     headlineMedium = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Bold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 1.5.sp
     ),
     headlineSmall = TextStyle(
-        fontFamily = SpaceMonoFamily,
+        fontFamily = NType82Family,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         lineHeight = 26.sp,
         letterSpacing = 1.sp
     ),
 
-    // Titles (e.g. podcast title in list)
+    // ── Title: nomi podcast/episodi nei elenchi (Outfit — leggibile) ──────
     titleLarge = TextStyle(
         fontFamily = OutfitFamily,
         fontWeight = FontWeight.SemiBold,
@@ -120,7 +120,7 @@ val NothingTypography = Typography(
         letterSpacing = 0.1.sp
     ),
 
-    // Body (episode descriptions, list text)
+    // ── Body: descrizioni, note episodio (Outfit) ─────────────────────────
     bodyLarge = TextStyle(
         fontFamily = OutfitFamily,
         fontWeight = FontWeight.Normal,
@@ -143,7 +143,7 @@ val NothingTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // Labels (buttons, chips, captions)
+    // ── Label: timestamp, badge, chip tecnici (SpaceMono monospace) ───────
     labelLarge = TextStyle(
         fontFamily = SpaceMonoFamily,
         fontWeight = FontWeight.Bold,

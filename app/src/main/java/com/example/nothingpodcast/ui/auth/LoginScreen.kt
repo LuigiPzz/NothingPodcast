@@ -88,7 +88,7 @@ fun LoginScreen(
                     else                   -> "Accedi"
                 },
                 style = MaterialTheme.typography.displayMedium.copy(
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = NType82Family,
                     fontWeight = FontWeight.Normal
                 ),
                 color = NothingWhite,

@@ -162,6 +162,54 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun loadLastEpisodeIfEmpty() {
+        if (_uiState.value.currentEpisode != null) return
+        
+        viewModelScope.launch {
+            val lastEpisode = episodeRepository.getLastPlayedEpisode()
+            if (lastEpisode != null) {
+                // Prepare but don't play automatically (let user press play)
+                // or should we play? The user said "aprire l'ultimo riprodotto"
+                // Usually opening the player is enough, but loading it is better.
+                prepareEpisodeInternal(lastEpisode)
+            }
+        }
+    }
+
+    private suspend fun prepareEpisodeInternal(episode: Episode) {
+        // Fetch fresh data
+        val freshEpisode = episodeRepository.getEpisodeById(episode.id) ?: episode
+        val podcast = podcastRepository.getPodcastById(freshEpisode.podcastId)
+        
+        _uiState.value = _uiState.value.copy(
+            currentEpisode = freshEpisode,
+            currentPodcast = podcast,
+            positionMs = freshEpisode.playbackPosition * 1000L
+        )
+
+        // If controller is connected, we can actually set it
+        controller?.let { c ->
+            val uri = if (freshEpisode.isDownloaded && freshEpisode.downloadPath != null)
+                android.net.Uri.fromFile(java.io.File(freshEpisode.downloadPath))
+            else
+                android.net.Uri.parse(freshEpisode.audioUrl)
+
+            val mediaItem = MediaItem.Builder()
+                .setUri(uri)
+                .setMediaId(freshEpisode.id)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(freshEpisode.title)
+                        .setArtist(freshEpisode.podcastTitle)
+                        .build()
+                )
+                .build()
+            
+            c.setMediaItem(mediaItem, freshEpisode.playbackPosition * 1000L)
+            c.prepare()
+        }
+    }
+
     fun togglePlayPause() {
         controller?.let {
             if (_uiState.value.isGlyphEnabled) glyphManager.pulseAction()

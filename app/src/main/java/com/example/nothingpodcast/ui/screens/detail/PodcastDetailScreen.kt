@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun PodcastDetailScreen(
     podcastId: String,
@@ -45,6 +46,8 @@ fun PodcastDetailScreen(
     val playerState by playerViewModel.uiState.collectAsStateWithLifecycle()
     val playingEpisodeId = playerState.currentEpisode?.id
     val isPlayerPlaying = playerState.isPlaying
+    
+    val dissolvingIds = remember { mutableStateMapOf<String, Boolean>() }
 
     Column(
         modifier = Modifier
@@ -72,7 +75,14 @@ fun PodcastDetailScreen(
                 CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.dp)
             }
         } else {
-            val episodes = uiState.filteredEpisodes
+            val baseEpisodes = uiState.filteredEpisodes
+            val episodes = remember(baseEpisodes, dissolvingIds.size) {
+                if (dissolvingIds.isEmpty()) baseEpisodes
+                else {
+                    val dissolvingItems = uiState.episodes.filter { it.id in dissolvingIds.keys && it !in baseEpisodes }
+                    (baseEpisodes + dissolvingItems).sortedByDescending { it.publishDate }
+                }
+            }
             var selectionMode by remember { mutableStateOf(false) }
             var selectedIds by remember { mutableStateOf(setOf<String>()) }
             var showSummarySheet by remember { mutableStateOf(false) }
@@ -129,7 +139,11 @@ fun PodcastDetailScreen(
 
                             IconButton(
                                 onClick = {
-                                    viewModel.markEpisodesPlayed(selectedIds)
+                                    if (uiState.filterType == EpisodeFilter.UNPLAYED) {
+                                        selectedIds.forEach { dissolvingIds[it] = true }
+                                    } else {
+                                        viewModel.markEpisodesPlayed(selectedIds)
+                                    }
                                     selectionMode = false
                                     selectedIds = emptySet()
                                 },
@@ -163,9 +177,9 @@ fun PodcastDetailScreen(
                         } else {
                             Text(
                                 text     = "EPISODI",
-                                fontFamily = SpaceMonoFamily,
-                                fontSize = 18.sp,
-                                letterSpacing = 2.sp,
+                                fontFamily = NType82Family,
+                                fontSize = 16.sp,
+                                letterSpacing = 3.sp,
                                 color    = NothingOnSurfaceDim,
                                 modifier = Modifier.weight(1f)
                             )
@@ -180,26 +194,43 @@ fun PodcastDetailScreen(
                 itemsIndexed(episodes, key = { _, ep -> ep.id }) { index, episode ->
                     val isSelected = selectedIds.contains(episode.id)
                     val isPlayingThis = (episode.id == playingEpisodeId)
-                    EpisodeListItem(
-                        episode        = episode,
-                        isPlaying      = isPlayingThis && isPlayerPlaying,
-                        downloadProgress = uiState.downloadProgress[episode.id],
-                        selectionMode = selectionMode,
-                        isSelected = isSelected,
-                        onToggleSelection = {
-                            selectedIds = if (isSelected) selectedIds - episode.id else selectedIds + episode.id
+                    val isDissolving = dissolvingIds.containsKey(episode.id)
+                    
+                    com.example.nothingpodcast.ui.components.PixelDissolveContainer(
+                        isDissolving = isDissolving,
+                        onAnimationEnd = {
+                            // First mark played to update DB, then remove from dissolving to let it vanish
+                            viewModel.markEpisodePlayed(episode.id)
+                            dissolvingIds.remove(episode.id)
                         },
-                        onEnterSelectionMode = { selectionMode = true; selectedIds = setOf(episode.id) },
-                        onPlay         = { 
-                            playerViewModel.playEpisode(episode)
-                            onNavigateToPlayer()
-                        },
-                        onPause        = { playerViewModel.togglePlayPause() },
-                        onMarkPlayed   = { viewModel.markEpisodePlayed(episode.id) },
-                        onMarkUnplayed = { viewModel.markEpisodeUnplayed(episode.id) },
-                        onDownload     = { viewModel.downloadEpisode(episode) },
-                        onDeleteDownload = { viewModel.deleteDownload(episode) } 
-                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem()
+                    ) {
+                        EpisodeListItem(
+                            episode        = episode,
+                            isPlaying      = isPlayingThis && isPlayerPlaying,
+                            downloadProgress = uiState.downloadProgress[episode.id],
+                            selectionMode = selectionMode,
+                            isSelected = isSelected,
+                            onToggleSelection = {
+                                selectedIds = if (isSelected) selectedIds - episode.id else selectedIds + episode.id
+                            },
+                            onEnterSelectionMode = { selectionMode = true; selectedIds = setOf(episode.id) },
+                            onPlay         = { 
+                                playerViewModel.playEpisode(episode)
+                                onNavigateToPlayer()
+                            },
+                            onPause        = { playerViewModel.togglePlayPause() },
+                            onMarkPlayed   = { 
+                                // Always trigger dissolve for feedback, even if not filtered out
+                                dissolvingIds[episode.id] = true
+                            },
+                            onMarkUnplayed = { viewModel.markEpisodeUnplayed(episode.id) },
+                            onDownload     = { viewModel.downloadEpisode(episode) },
+                            onDeleteDownload = { viewModel.deleteDownload(episode) } 
+                        )
+                    }
                     HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
                 }
             }
@@ -256,12 +287,13 @@ private fun PodcastHeader(
             ) {
                 Text(
                     text = podcast.title,
-                    fontFamily = PlayfairFamily,
+                    fontFamily = NType82Family,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
                     color = NothingWhite,
                     maxLines = 3,
                     lineHeight = 30.sp,
+                    letterSpacing = 0.5.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
@@ -312,7 +344,7 @@ private fun PodcastHeader(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = podcast.author,
-                fontFamily = SpaceMonoFamily,
+                fontFamily = OutfitFamily,
                 fontSize = 14.sp,
                 color = NothingOnSurfaceDim,
                 maxLines = 1,
@@ -338,7 +370,7 @@ private fun PodcastHeader(
                     Text(
                         text = (podcast.fundingText ?: "Support this podcast").uppercase(),
                         fontFamily = SpaceMonoFamily,
-                        fontSize = 12.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = NothingWhite
                     )
@@ -423,7 +455,6 @@ private fun EpisodeListItem(
                         text = "•",
                         style = MaterialTheme.typography.labelSmall,
                         color = NothingOnSurfaceDim,
-                        fontFamily = SpaceMonoFamily,
                         fontSize = 10.sp,
                         modifier = Modifier.padding(end = 4.dp)
                     )
@@ -467,7 +498,7 @@ private fun EpisodeListItem(
 
             Text(
                 text     = episode.title,
-                fontFamily = SpaceMonoFamily,
+                fontFamily = OutfitFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color    = if (episode.isPlayed && !isPlaying) NothingOnSurfaceVariant else NothingWhite,
@@ -710,7 +741,7 @@ private fun FilterSortBottomSheet(
         ) {
             Text(
                 text = "Ordinamento e filtri",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize = 22.sp,
                 color = NothingWhite,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -852,7 +883,7 @@ private fun PodcastSummaryBottomSheet(
                 Column {
                     Text(
                         text = podcast.title,
-                        fontFamily = PlayfairFamily,
+                        fontFamily = NType82Family,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = NothingWhite,
@@ -860,7 +891,7 @@ private fun PodcastSummaryBottomSheet(
                     )
                     Text(
                         text = podcast.author,
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = NType82Family,
                         fontSize = 12.sp,
                         color = NothingOnSurfaceDim
                     )
@@ -875,7 +906,7 @@ private fun PodcastSummaryBottomSheet(
                                 text = podcast.medium!!.uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = NothingOnSurfaceVariant,
-                                fontFamily = SpaceMonoFamily,
+                                fontFamily = NType82Family,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 fontSize = 8.sp
                             )
@@ -888,7 +919,7 @@ private fun PodcastSummaryBottomSheet(
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = podcast.locationName.uppercase(),
-                                fontFamily = SpaceMonoFamily,
+                                fontFamily = NType82Family,
                                 fontSize = 10.sp,
                                 color = NothingOnSurfaceDim
                             )
@@ -930,7 +961,7 @@ private fun PodcastSummaryBottomSheet(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "LICENZA: ${podcast.licenseName.uppercase()}",
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = NType82Family,
                         fontSize = 10.sp,
                         color = NothingOnSurfaceDim
                     )
@@ -941,7 +972,7 @@ private fun PodcastSummaryBottomSheet(
             
             Text(
                 text = "Descrizione",
-                fontFamily = SpaceMonoFamily,
+                fontFamily = NType82Family,
                 fontSize = 14.sp,
                 color = NothingWhite,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -958,7 +989,7 @@ private fun PodcastSummaryBottomSheet(
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = "CREDITI",
-                    fontFamily = SpaceMonoFamily,
+                    fontFamily = NType82Family,
                     fontSize = 14.sp,
                     color = NothingWhite,
                     modifier = Modifier.padding(bottom = 12.dp)

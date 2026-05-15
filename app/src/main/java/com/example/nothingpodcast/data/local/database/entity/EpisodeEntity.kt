@@ -40,5 +40,6 @@ data class EpisodeEntity(
     val podcastGuid: String? = null,
     val season: Int? = null,
     val episodeNumber: Int? = null,
-    val episodeType: String? = null
+    val episodeType: String? = null,
+    val lastPlayedAt: Long = 0L // epoch ms
 )

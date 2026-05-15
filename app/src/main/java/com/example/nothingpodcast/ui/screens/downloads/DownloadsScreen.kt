@@ -53,7 +53,7 @@ fun DownloadsScreen(
             }
             Text(
                 text  = "Download",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize = 24.sp,
                 color = NothingWhite
             )

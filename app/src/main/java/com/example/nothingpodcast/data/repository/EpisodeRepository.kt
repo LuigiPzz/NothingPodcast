@@ -24,6 +24,9 @@ class EpisodeRepository @Inject constructor(
     suspend fun getEpisodeById(id: String): Episode? =
         episodeDao.getEpisodeById(id)?.toDomain()
 
+    suspend fun getLastPlayedEpisode(): Episode? =
+        episodeDao.getLastPlayedEpisode()?.toDomain()
+
     suspend fun markPlayed(episodeId: String, position: Long = 0L) {
         episodeDao.updatePlaybackState(episodeId, played = true, position = position)
     }
@@ -45,4 +48,7 @@ class EpisodeRepository @Inject constructor(
         // Only reset the download state — do NOT delete the episode from the DB
         episodeDao.updateDownloadState(episodeId, downloaded = false, path = null)
     }
+
+    fun getTotalEpisodeCount(): Flow<Int> = episodeDao.getTotalCount()
+    fun getPlayedEpisodeCount(): Flow<Int> = episodeDao.getPlayedCount()
 }

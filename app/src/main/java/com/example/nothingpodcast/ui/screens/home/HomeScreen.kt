@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -108,7 +110,7 @@ fun HomeScreen(
             ) {
                 Text(
                     text       = "Nothing Podcast",
-                    fontFamily = PlayfairFamily,
+                    fontFamily = NType82Family,
                     fontWeight = FontWeight.Normal,
                     fontSize   = 30.sp,
                     color      = NothingWhite,
@@ -132,7 +134,7 @@ fun HomeScreen(
             ) {
                 Text(
                     text     = stringResource(R.string.label_subscriptions),
-                    fontFamily = PlayfairFamily,
+                    fontFamily = NType82Family,
                     fontWeight = FontWeight.Normal,
                     fontSize = 20.sp,
                     color    = NothingWhite,
@@ -392,14 +394,14 @@ private fun ProfileMenu(
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                     Text(
                         text = stringResource(R.string.label_account),
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 10.sp,
                         color = NothingOnSurfaceDim
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = userEmail,
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 12.sp,
                         color = NothingWhite
                     )
@@ -411,7 +413,7 @@ private fun ProfileMenu(
                     text = { 
                         Text(
                             text = "Esci",
-                            fontFamily = SpaceMonoFamily,
+                            fontFamily = OutfitFamily,
                             fontSize = 12.sp
                         ) 
                     },
@@ -427,7 +429,7 @@ private fun ProfileMenu(
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                     Text(
                         text = "Ospite",
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = NothingWhite
@@ -435,7 +437,7 @@ private fun ProfileMenu(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = "Non loggato",
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 10.sp,
                         color = NothingOnSurfaceDim
                     )
@@ -447,7 +449,7 @@ private fun ProfileMenu(
                     text = { 
                         Text(
                             text = "Registrati o Accedi",
-                            fontFamily = SpaceMonoFamily,
+                            fontFamily = OutfitFamily,
                             fontSize = 12.sp
                         ) 
                     },
@@ -467,7 +469,7 @@ private fun ProfileMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.action_downloads),
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 12.sp,
                         color = NothingWhite
                     )
@@ -481,7 +483,7 @@ private fun ProfileMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.action_settings),
-                        fontFamily = SpaceMonoFamily,
+                        fontFamily = OutfitFamily,
                         fontSize = 12.sp,
                         color = NothingWhite
                     )
@@ -710,7 +712,7 @@ private fun SearchBottomSheet(
         ) {
             Text(
                 text       = stringResource(R.string.label_add_podcast),
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize   = 24.sp,
                 color      = NothingWhite,
                 modifier   = Modifier.padding(bottom = 14.dp)
@@ -947,6 +949,7 @@ private fun PodcastListItem(
             model              = podcast.imageUrl,
             contentDescription = podcast.title,
             contentScale       = ContentScale.Crop,
+            colorFilter        = if (podcast.unplayedCount == 0) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null,
             modifier           = Modifier
                 .size(56.dp)
                 .border(1.dp, NothingWhite)
@@ -1042,6 +1045,7 @@ private fun PodcastGridItem(
                 model              = podcast.imageUrl,
                 contentDescription = podcast.title,
                 contentScale       = ContentScale.Crop,
+                colorFilter        = if (podcast.unplayedCount == 0) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null,
                 modifier           = Modifier
                     .aspectRatio(1f)
                     .fillMaxWidth()

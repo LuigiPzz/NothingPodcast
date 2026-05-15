@@ -24,7 +24,11 @@ data class SettingsUiState(
     val importProgress: Int = 0,
     val importTotal: Int = 0,
     val importError: String? = null,
-    val isGlyphEnabled: Boolean = true
+    val isGlyphEnabled: Boolean = true,
+    val localPodcastCount: Int = 0,
+    val totalEpisodeCount: Int = 0,
+    val playedEpisodeCount: Int = 0,
+    val cloudSyncSummary: com.example.nothingpodcast.data.repository.SyncRepository.SyncSummary? = null
 )
 
 @HiltViewModel
@@ -32,9 +36,24 @@ class SettingsViewModel @Inject constructor(
     private val preferencesDataStore: UserPreferencesDataStore,
     private val podcastRepository:   PodcastRepository,
     private val syncRepository:      com.example.nothingpodcast.data.repository.SyncRepository,
+    private val episodeRepository:   com.example.nothingpodcast.data.repository.EpisodeRepository,
     private val glyphManager:        com.example.nothingpodcast.util.NothingGlyphManager,
     val driveService:               com.example.nothingpodcast.data.remote.google.GoogleDriveService
 ) : ViewModel() {
+
+    init {
+        // Auto-refresh cloud summary on startup if logged in
+        viewModelScope.launch {
+            try {
+                val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(com.example.nothingpodcast.NothingPodcastApplication.instance)
+                if (account != null) {
+                    refreshCloudSummary(account)
+                }
+            } catch (e: Exception) {
+                com.example.nothingpodcast.util.AppLogger.e("Failed to check Google Sign-In status", e)
+            }
+        }
+    }
 
     fun testGlyph() {
         glyphManager.pulseAction()
@@ -48,7 +67,21 @@ class SettingsViewModel @Inject constructor(
 
     fun downloadFromDrive(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount, onResult: (Result<Int>) -> Unit) {
         viewModelScope.launch {
-            onResult(syncRepository.downloadAndApply(account))
+            val res = syncRepository.downloadAndApply(account)
+            onResult(res)
+            if (res.isSuccess) {
+                refreshCloudSummary(account)
+            }
+        }
+    }
+
+    private val _cloudSyncSummary = MutableStateFlow<com.example.nothingpodcast.data.repository.SyncRepository.SyncSummary?>(null)
+
+    fun refreshCloudSummary(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
+        viewModelScope.launch {
+            syncRepository.getRemoteSyncSummary(account).onSuccess {
+                _cloudSyncSummary.value = it
+            }
         }
     }
 
@@ -70,9 +103,14 @@ class SettingsViewModel @Inject constructor(
         preferencesDataStore.updateIntervalHours,
         preferencesDataStore.updateWifiOnly,
         preferencesDataStore.glyphEnabled,
-        _importStatus
+        _importStatus,
+        podcastRepository.getSubscribedPodcasts(),
+        _cloudSyncSummary,
+        episodeRepository.getTotalEpisodeCount(),
+        episodeRepository.getPlayedEpisodeCount()
     ) { args ->
         val importStatus = args[9] as ImportStatus
+        val localPodcasts = args[10] as List<*>
         SettingsUiState(
             notificationsEnabled = args[0] as Boolean,
             skipForwardSeconds = args[1] as Int,
@@ -86,7 +124,11 @@ class SettingsViewModel @Inject constructor(
             isImporting = importStatus.isImporting,
             importProgress = importStatus.progress,
             importTotal = importStatus.total,
-            importError = importStatus.error
+            importError = importStatus.error,
+            localPodcastCount = localPodcasts.size,
+            cloudSyncSummary = args[11] as com.example.nothingpodcast.data.repository.SyncRepository.SyncSummary?,
+            totalEpisodeCount = args[12] as Int,
+            playedEpisodeCount = args[13] as Int
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 

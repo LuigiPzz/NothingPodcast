@@ -85,7 +85,7 @@ class PodcastDetailViewModel @Inject constructor(
             podcast = args[0] as Podcast?,
             episodes = args[1] as List<Episode>,
             downloadProgress = args[2] as Map<String, Int>,
-            filterType = runCatching { EpisodeFilter.valueOf(args[3] as String) }.getOrDefault(EpisodeFilter.ALL),
+            filterType = runCatching { EpisodeFilter.valueOf(args[3] as String) }.getOrDefault(EpisodeFilter.UNPLAYED),
             sortType = runCatching { EpisodeSort.valueOf(args[4] as String) }.getOrDefault(EpisodeSort.DATE_DESC),
             showFilterSheet = args[5] as Boolean,
             isLoading = args[6] as Boolean,

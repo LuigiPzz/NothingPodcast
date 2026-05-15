@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.text.HtmlCompat
 
 @Singleton
 class RssFeedParser @Inject constructor(
@@ -50,7 +51,7 @@ class RssFeedParser @Inject constructor(
 
                 val parser = Xml.newPullParser().apply {
                     setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-                    setInput(stream, Charsets.UTF_8.name())
+                    setInput(stream, null)
                 }
                 parseFeed(parser, podcastId, podcastTitle, podcastImageUrl)
             }
@@ -124,7 +125,7 @@ class RssFeedParser @Inject constructor(
 
                 val parser = Xml.newPullParser().apply {
                     setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-                    setInput(stream, Charsets.UTF_8.name())
+                    setInput(stream, null)
                 }
 
                 parser.nextTag()
@@ -138,7 +139,7 @@ class RssFeedParser @Inject constructor(
                             when (parser.name) {
                                 "title" -> if (parser.depth == depth + 1) title = readText(parser) else skipTag(parser)
                                 "itunes:author" -> if (parser.depth == depth + 1) author = readText(parser) else skipTag(parser)
-                                "description" -> if (parser.depth == depth + 1) description = readText(parser).trimHtml() else skipTag(parser)
+                                "description" -> if (parser.depth == depth + 1) description = readText(parser).cleanHtml() else skipTag(parser)
                                 "itunes:image" -> {
                                     if (parser.depth == depth + 1) {
                                         imageUrl = parser.getAttributeValue(null, "href") ?: ""
@@ -202,9 +203,9 @@ class RssFeedParser @Inject constructor(
 
         com.example.nothingpodcast.domain.model.Podcast(
             id = feedUrl.hashCode().toString(),
-            title = title.takeIf { it.isNotBlank() } ?: "Unknown Podcast",
-            author = author.takeIf { it.isNotBlank() } ?: "Unknown Author",
-            description = description,
+            title = title.cleanHtml().takeIf { it.isNotBlank() } ?: "Unknown Podcast",
+            author = author.cleanHtml().takeIf { it.isNotBlank() } ?: "Unknown Author",
+            description = description.cleanHtml(),
             imageUrl = imageUrl,
             feedUrl = feedUrl,
             isSubscribed = true,
@@ -357,7 +358,7 @@ class RssFeedParser @Inject constructor(
         if (audioUrl.isNullOrBlank()) return null
 
         val rawDescription = description ?: ""
-        val cleanedDescription = rawDescription.trimHtml()
+        val cleanedDescription = rawDescription.cleanHtml()
         
         var finalChapters = htmlChapters.distinctBy { it.startTime }.sortedBy { it.startTime }
         if (finalChapters.isEmpty()) {
@@ -369,7 +370,7 @@ class RssFeedParser @Inject constructor(
             podcastId = podcastId,
             podcastTitle = podcastTitle,
             podcastImageUrl = podcastImageUrl,
-            title = title ?: "Untitled Episode",
+            title = title?.cleanHtml() ?: "Untitled Episode",
             description = cleanedDescription,
             audioUrl = audioUrl,
             imageUrl = imageUrl,
@@ -414,7 +415,7 @@ class RssFeedParser @Inject constructor(
         // We also try searching without the line start anchor for more flexibility
         val flexibleRegex = Regex("[\\(\\[]?(\\d{1,2}:\\d{2}(?::\\d{2})?)[\\)\\]]?\\s*[-–—]\\s*(.*)")
 
-        val lines = description.replace("<br>", "\n").replace("<p>", "\n").replace("</p>", "\n").trimHtml().lines()
+        val lines = description.replace("<br>", "\n").replace("<p>", "\n").replace("</p>", "\n").cleanHtml().lines()
         
         lines.forEach { line ->
             val match = regex.find(line) ?: flexibleRegex.find(line)
@@ -471,12 +472,13 @@ class RssFeedParser @Inject constructor(
         return 0L
     }
 
-    private fun String.trimHtml(): String =
-        replace(Regex("<br\\s*/?>"), "\n")
-        .replace(Regex("</p>"), "\n")
-        .replace(Regex("</li>"), "\n")
-        .replace(Regex("</div>"), "\n")
-        .replace(Regex("<[^>]*>"), "")
-        .replace("&nbsp;", " ")
-        .trim()
+    private fun String.cleanHtml(): String {
+        if (this.isBlank()) return ""
+        return try {
+            HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
+        } catch (e: Exception) {
+            // Fallback to manual cleaning if HtmlCompat fails or for very old APIs (though minSdk is 26)
+            this.replace(Regex("<[^>]*>"), "").replace("&nbsp;", " ").trim()
+        }
+    }
 }

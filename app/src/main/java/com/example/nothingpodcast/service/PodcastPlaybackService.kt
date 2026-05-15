@@ -78,6 +78,7 @@ class PodcastPlaybackService : MediaLibraryService() {
                 browser: MediaSession.ControllerInfo,
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<MediaItem>> {
+                com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onGetLibraryRoot from ${browser.packageName}")
                 return Futures.immediateFuture(LibraryResult.ofItem(getRootItem(), params))
             }
 
@@ -89,6 +90,7 @@ class PodcastPlaybackService : MediaLibraryService() {
                 pageSize: Int,
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+                com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onGetChildren for parentId: $parentId")
                 return serviceScope.future {
                     val children = when (parentId) {
                         ROOT_ID -> listOf(getSubscriptionsCategory(), getDownloadsCategory())
@@ -98,6 +100,7 @@ class PodcastPlaybackService : MediaLibraryService() {
                             episodeRepository.getEpisodesForPodcast(parentId).first().map { it.toMediaItem() }
                         }
                     }
+                    com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: returning ${children.size} children for $parentId")
                     LibraryResult.ofItemList(children, params)
                 }
             }
@@ -150,6 +153,8 @@ class PodcastPlaybackService : MediaLibraryService() {
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo
             ): MediaSession.ConnectionResult {
+                com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onConnect from ${controller.packageName} (isAuto: ${controller.packageName.contains("projection")})")
+                
                 val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                     .add(SessionCommand(COMMAND_SKIP_FORWARD, android.os.Bundle.EMPTY))
                     .add(SessionCommand(COMMAND_SKIP_BACKWARD, android.os.Bundle.EMPTY))
@@ -277,16 +282,33 @@ class PodcastPlaybackService : MediaLibraryService() {
                     val durationMs = player.duration.coerceAtLeast(1L)
                     val timeDisplay = "$currentPos / $duration"
 
-                    views.setTextViewText(R.id.simple_text_title, episodeTitle)
-                    views.setTextViewText(R.id.simple_text_time, timeDisplay)
+                    val isEmpty = episodeTitle == "Nessun episodio" || episodeTitle.isBlank()
                     
-                    // Generate dotted progress bitmap
-                    val progressFrac = if (durationMs > 0) (player.currentPosition.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-                    val dottedBitmap = createDottedProgressBitmap(context, progressFrac)
-                    views.setImageViewBitmap(R.id.simple_progress_image, dottedBitmap)
-                    
-                    val playPauseIcon = if (isPlaying) R.drawable.widget_dot_pause else R.drawable.widget_dot_play
-                    views.setImageViewResource(R.id.simple_btn_play, playPauseIcon)
+                    if (isEmpty) {
+                        views.setViewVisibility(R.id.widget_empty_cover, android.view.View.VISIBLE)
+                        views.setViewVisibility(R.id.widget_player_container, android.view.View.GONE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_empty_cover, android.view.View.GONE)
+                        views.setViewVisibility(R.id.widget_player_container, android.view.View.VISIBLE)
+                        
+                        // Render title bitmap
+                        createTitleBitmap(context, episodeTitle)?.let {
+                            views.setImageViewBitmap(R.id.widget_header_styled, it)
+                        }
+                        
+                        // Generate dotted progress bitmap
+                        val progressFrac = if (durationMs > 0) (player.currentPosition.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+                        val dottedBitmap = createDottedProgressBitmap(context, progressFrac)
+                        views.setImageViewBitmap(R.id.simple_progress_image, dottedBitmap)
+
+                        // Render split times bitmap (Current on Left, Total on Right)
+                        createTimesBitmap(context, timeDisplay.substringBefore(" / "), timeDisplay.substringAfter(" / "))?.let {
+                            views.setImageViewBitmap(R.id.widget_times_styled, it)
+                        }
+                        
+                        val playPauseIcon = if (isPlaying) R.drawable.widget_dot_pause else R.drawable.widget_dot_play
+                        views.setImageViewResource(R.id.simple_btn_play, playPauseIcon)
+                    }
                     
                     // Setup PendingIntents
                     val openAppIntent = android.content.Intent(context, com.example.nothingpodcast.MainActivity::class.java).apply {
@@ -294,8 +316,9 @@ class PodcastPlaybackService : MediaLibraryService() {
                         putExtra("OPEN_PLAYER", true)
                     }
                     val openAppPending = android.app.PendingIntent.getActivity(context, 20, openAppIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
-                    views.setOnClickPendingIntent(R.id.widget_header_container, openAppPending)
+                    views.setOnClickPendingIntent(R.id.widget_player_container, openAppPending)
                     views.setOnClickPendingIntent(R.id.simple_progress_image, openAppPending)
+                    views.setOnClickPendingIntent(R.id.widget_empty_cover, openAppPending)
 
                     val playPauseIntent = android.content.Intent(context, com.example.nothingpodcast.service.PodcastPlaybackService::class.java).apply { action = com.example.nothingpodcast.service.PodcastPlaybackService.COMMAND_PLAY_PAUSE }
                     views.setOnClickPendingIntent(R.id.simple_btn_play_container, android.app.PendingIntent.getService(context, 11, playPauseIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE))
@@ -314,40 +337,104 @@ class PodcastPlaybackService : MediaLibraryService() {
         }
     }
 
+    private fun createTitleBitmap(context: android.content.Context, title: String): android.graphics.Bitmap? {
+        return try {
+            val density = context.resources.displayMetrics.density
+            val width = 1200 
+            val height = (32 * density).toInt()
+            
+            val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap)
+            
+            val titlePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.WHITE
+                textSize = 24 * density
+                typeface = try { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.ndot55) } catch (e: Exception) { android.graphics.Typeface.SANS_SERIF }
+                textAlign = android.graphics.Paint.Align.CENTER
+                setShadowLayer(8f, 0f, 0f, android.graphics.Color.BLACK)
+            }
+            
+            val centerX = width / 2f
+            val titleY = 26 * density
+            var displayTitle = title
+            val maxTitleWidth = width - 40f
+            if (titlePaint.measureText(title) > maxTitleWidth) {
+                var len = title.length
+                while (len > 0 && titlePaint.measureText(title.substring(0, len) + "..") > maxTitleWidth) {
+                    len--
+                }
+                displayTitle = title.substring(0, len) + ".."
+            }
+            canvas.drawText(displayTitle, centerX, titleY, titlePaint)
+            bitmap
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun createTimesBitmap(context: android.content.Context, currentTime: String, totalTime: String): android.graphics.Bitmap? {
+        return try {
+            val density = context.resources.displayMetrics.density
+            val width = 1200
+            val height = (16 * density).toInt()
+            
+            val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap)
+            
+            val timePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.parseColor("#B3FFFFFF")
+                textSize = 15 * density
+                typeface = try { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.ntype82mono_regular) } catch (e: Exception) { android.graphics.Typeface.MONOSPACE }
+                setShadowLayer(5f, 0f, 0f, android.graphics.Color.BLACK)
+            }
+            
+            val timeY = 12 * density
+            val padding = 10 * density
+            
+            // Left: Current Time
+            timePaint.textAlign = android.graphics.Paint.Align.LEFT
+            canvas.drawText(currentTime, padding, timeY, timePaint)
+            
+            // Right: Total Time
+            timePaint.textAlign = android.graphics.Paint.Align.RIGHT
+            canvas.drawText(totalTime, width - padding, timeY, timePaint)
+            
+            bitmap
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun createDottedProgressBitmap(context: android.content.Context, progress: Float): android.graphics.Bitmap {
-        val width = 800
-        val height = 64 // Increased height for thumb clearance
+        val width = 1000
+        val height = 40
         val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         
-        val dotCount = 55
-        val dotRadius = 4f
-        val horizontalPadding = 8f
+        val dotCount = 60 // Higher density
+        val dotRadius = 3f
+        val horizontalPadding = 10f // Minimal padding to fill the width
         val drawWidth = width - (horizontalPadding * 2)
         val centerY = height / 2f
         val dotSpacing = drawWidth / (dotCount - 1)
         
-        // Colors from Nothing Palette
-        val redColor = 0xFFFF2A2A.toInt()
-        val greyColor = 0xFF1F1F1F.toInt()
-        val whiteColor = 0xFFFFFFFF.toInt()
-        val blackColor = 0xFF000000.toInt()
+        val nothingRed = 0xFFFF2A2A.toInt()
+        val greyColor = 0xFF222222.toInt()
 
+        // Draw background dots
         for (i in 0 until dotCount) {
             val dotX = horizontalPadding + (i * dotSpacing)
             val dotProgress = i.toFloat() / (dotCount - 1)
             
-            paint.color = if (dotProgress <= progress) redColor else greyColor
+            paint.color = if (dotProgress <= progress) nothingRed else greyColor
             canvas.drawCircle(dotX, centerY, dotRadius, paint)
         }
         
-        // Draw Thumb (White circle with black outline)
+        // Draw Red Dot Thumb (The signature Nothing Red Dot)
         val thumbX = horizontalPadding + (progress * drawWidth)
-        paint.color = blackColor
-        canvas.drawCircle(thumbX, centerY, 15f, paint)
-        paint.color = whiteColor
-        canvas.drawCircle(thumbX, centerY, 11f, paint)
+        paint.color = nothingRed
+        canvas.drawCircle(thumbX, centerY, 8f, paint)
         
         return bitmap
     }
@@ -372,15 +459,36 @@ class PodcastPlaybackService : MediaLibraryService() {
         intent?.action?.let { action ->
             when (action) {
                 COMMAND_SKIP_FORWARD -> {
-                    val newPos = (player.currentPosition + 30_000L).coerceAtMost(player.duration)
-                    player.seekTo(newPos)
+                    if (::player.isInitialized) {
+                        val newPos = (player.currentPosition + 30_000L).coerceAtMost(player.duration)
+                        player.seekTo(newPos)
+                    }
                 }
                 COMMAND_SKIP_BACKWARD -> {
-                    val newPos = (player.currentPosition - 15_000L).coerceAtLeast(0L)
-                    player.seekTo(newPos)
+                    if (::player.isInitialized) {
+                        val newPos = (player.currentPosition - 15_000L).coerceAtLeast(0L)
+                        player.seekTo(newPos)
+                    }
                 }
                 COMMAND_PLAY_PAUSE -> {
-                    if (player.isPlaying) player.pause() else player.play()
+                    if (::player.isInitialized) {
+                        if (player.mediaItemCount == 0) {
+                            // Cold start from widget: load last played episode
+                            serviceScope.launch {
+                                val lastEpisode = episodeRepository.getLastPlayedEpisode()
+                                if (lastEpisode != null) {
+                                    com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "Service: Cold start loading ${lastEpisode.title} at ${lastEpisode.playbackPosition}s")
+                                    val mediaItem = lastEpisode.toMediaItem()
+                                    player.setMediaItem(mediaItem)
+                                    player.seekTo(lastEpisode.playbackPosition * 1000L)
+                                    player.prepare()
+                                    player.play()
+                                }
+                            }
+                        } else {
+                            if (player.isPlaying) player.pause() else player.play()
+                        }
+                    }
                 }
             }
         }
@@ -475,6 +583,7 @@ class PodcastPlaybackService : MediaLibraryService() {
         .setMediaMetadata(MediaMetadata.Builder()
             .setIsBrowsable(true)
             .setIsPlayable(false)
+            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
             .build())
         .build()
 
@@ -484,6 +593,7 @@ class PodcastPlaybackService : MediaLibraryService() {
             .setTitle("Iscrizioni")
             .setIsBrowsable(true)
             .setIsPlayable(false)
+            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
             .build())
         .build()
 
@@ -493,6 +603,7 @@ class PodcastPlaybackService : MediaLibraryService() {
             .setTitle("Download")
             .setIsBrowsable(true)
             .setIsPlayable(false)
+            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
             .build())
         .build()
 
@@ -504,6 +615,7 @@ class PodcastPlaybackService : MediaLibraryService() {
             .setArtworkUri(android.net.Uri.parse(imageUrl))
             .setIsBrowsable(true)
             .setIsPlayable(false)
+            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
             .build())
         .build()
 
@@ -515,6 +627,7 @@ class PodcastPlaybackService : MediaLibraryService() {
             .setArtworkUri(android.net.Uri.parse(imageUrl))
             .setIsBrowsable(false)
             .setIsPlayable(true)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
             .build())
         .setUri(android.net.Uri.parse(downloadPath ?: audioUrl))
         .build()

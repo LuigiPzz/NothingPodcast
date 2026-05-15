@@ -94,14 +94,18 @@ class PodcastRepository @Inject constructor(
 
     // ── Episode refresh ───────────────────────────────────────────────────
 
-    suspend fun refreshEpisodes(podcast: Podcast) {
+    /** Returns Pair(count of new episodes, title of latest new episode) */
+    suspend fun refreshEpisodes(podcast: Podcast): Pair<Int, String?> {
         val episodes = rssFeedParser.parseEpisodes(
             feedUrl       = podcast.feedUrl,
             podcastId     = podcast.id,
             podcastTitle  = podcast.title,
             podcastImageUrl = podcast.imageUrl
         )
-        episodeDao.upsertEpisodes(episodes)
+        val newCount = episodeDao.upsertEpisodes(episodes)
         podcastDao.updateLastRefreshed(podcast.id, System.currentTimeMillis())
+        
+        val latestTitle = if (newCount > 0) episodes.maxByOrNull { it.publishDate }?.title else null
+        return Pair(newCount, latestTitle)
     }
 }

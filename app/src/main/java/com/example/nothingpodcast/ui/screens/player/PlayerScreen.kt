@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
 import com.example.nothingpodcast.R
 import com.example.nothingpodcast.ui.player.PlayerViewModel
+import com.example.nothingpodcast.ui.player.PlayerUiState
 import com.example.nothingpodcast.ui.theme.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -46,7 +47,13 @@ fun PlayerScreen(
     val uiState by playerViewModel.uiState.collectAsStateWithLifecycle()
     val skipFwd  by playerViewModel.skipForwardSeconds.collectAsStateWithLifecycle()
     val skipBwd  by playerViewModel.skipBackwardSeconds.collectAsStateWithLifecycle()
-    val episode = uiState.currentEpisode ?: return
+    val episode = uiState.currentEpisode
+    if (episode == null) {
+        Box(modifier = Modifier.fillMaxSize().background(NothingBlack), contentAlignment = Alignment.Center) {
+            Text("NESSUN EPISODIO IN RIPRODUZIONE", color = NothingWhite, fontFamily = NType82Family)
+        }
+        return
+    }
     val context = androidx.compose.ui.platform.LocalContext.current
     val vibrator = remember {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -75,11 +82,13 @@ fun PlayerScreen(
         }
     }
 
-    Column(
-        modifier            = Modifier
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    Box(
+        modifier = Modifier
             .fillMaxSize()
             .background(NothingBlack)
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp)
             .pointerInput(showSpeedSelector) {
                 detectTapGestures {
                     if (showSpeedSelector) {
@@ -87,270 +96,49 @@ fun PlayerScreen(
                         showSpeedSelector = false
                     }
                 }
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
+            }
     ) {
-        // ── Top bar ────────────────────────────────────────────────────────
-        Row(
-            modifier          = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { 
-                performClick()
-                onDismiss() 
-            }) {
-                Icon(Icons.Outlined.KeyboardArrowDown, "Close", tint = NothingWhite)
-            }
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = episode.podcastTitle.uppercase(),
-                fontFamily = SpaceMonoFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                letterSpacing = 1.5.sp,
-                color = NothingOnSurfaceVariant
+        if (isLandscape) {
+            PlayerLandscapeContent(
+                episode = episode,
+                uiState = uiState,
+                skipFwd = skipFwd,
+                skipBwd = skipBwd,
+                showSpeedSelector = showSpeedSelector,
+                onDismiss = onDismiss,
+                onToggleSpeed = { performClick(); showSpeedSelector = !showSpeedSelector },
+                onShowAudioOutput = { performClick(); showAudioOutput = true },
+                onShowChapters = { showChapters = true },
+                onShowNotes = { showNotes = true },
+                onShowTranscript = { playerViewModel.fetchTranscript(); showTranscript = true },
+                onTogglePlayPause = { performClick(); playerViewModel.togglePlayPause() },
+                onSkipForward = { performClick(); playerViewModel.skipForward() },
+                onSkipBackward = { performClick(); playerViewModel.skipBackward() },
+                onSeek = { pos -> performClick(); playerViewModel.seekTo(pos) },
+                onSpeedChange = { speed -> performClick(); playerViewModel.setSpeed(speed); showSpeedSelector = false }
             )
-            Spacer(Modifier.weight(1f))
-            
-            IconButton(onClick = { 
-                performClick()
-                showAudioOutput = true 
-            }) {
-                Icon(Icons.Outlined.SpeakerGroup, "Uscita audio", tint = NothingOnSurfaceVariant)
-            }
-        }
-
-        // ── Artwork ────────────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .size(262.dp) // Increased by 5%
-                .border(1.dp, NothingWhite)
-                .background(NothingBlack),
-            contentAlignment = Alignment.Center
-        ) {
-            AsyncImage(
-                model              = episode.imageUrl,
-                contentDescription = episode.title,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier.fillMaxSize()
+        } else {
+            PlayerPortraitContent(
+                episode = episode,
+                uiState = uiState,
+                skipFwd = skipFwd,
+                skipBwd = skipBwd,
+                showSpeedSelector = showSpeedSelector,
+                onDismiss = onDismiss,
+                onToggleSpeed = { performClick(); showSpeedSelector = !showSpeedSelector },
+                onShowAudioOutput = { performClick(); showAudioOutput = true },
+                onShowChapters = { showChapters = true },
+                onShowNotes = { showNotes = true },
+                onShowTranscript = { playerViewModel.fetchTranscript(); showTranscript = true },
+                onTogglePlayPause = { performClick(); playerViewModel.togglePlayPause() },
+                onSkipForward = { performClick(); playerViewModel.skipForward() },
+                onSkipBackward = { performClick(); playerViewModel.skipBackward() },
+                onSeek = { pos -> performClick(); playerViewModel.seekTo(pos) },
+                onSpeedChange = { speed -> performClick(); playerViewModel.setSpeed(speed); showSpeedSelector = false }
             )
         }
 
-        Spacer(Modifier.height(32.dp))
-
-        // ── Title + podcast ────────────────────────────────────────────────
-        // Episode Info (Season, Episode, Type)
-        val infoParts = mutableListOf<String>()
-        episode.season?.takeIf { it > 0 }?.let { infoParts.add("STAGIONE $it") }
-        episode.episodeNumber?.let { infoParts.add("EPISODIO $it") }
-        
-        val metaText = infoParts.joinToString(" • ")
-        if (metaText.isNotEmpty() || !episode.episodeType.isNullOrBlank()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (metaText.isNotEmpty()) {
-                    Text(
-                        text = metaText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim,
-                        fontFamily = SpaceMonoFamily
-                    )
-                }
-                if (!episode.episodeType.isNullOrBlank() && episode.episodeType != "full") {
-                    if (metaText.isNotEmpty()) {
-                        Text(
-                            text = " • ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = NothingOnSurfaceDim
-                        )
-                    }
-                    Surface(
-                        color = NothingRed.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = episode.episodeType!!.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = NothingRed,
-                            fontFamily = SpaceMonoFamily,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-        }
-
-        Text(
-            text      = episode.title,
-            fontFamily = OutfitFamily,
-            fontSize   = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color     = NothingWhite,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // ── Current Chapter Bar ───────────────────────────────────────────
-        val currentChapter = remember(episode.chapters, uiState.positionMs) {
-            val currentSeconds = uiState.positionMs / 1000
-            episode.chapters.findLast { it.startTime <= currentSeconds }
-        }
-
-        Row(
-            modifier = Modifier
-                .clickable { showChapters = true }
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.List,
-                contentDescription = "Capitoli",
-                tint = NothingWhite,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = currentChapter?.title?.uppercase() ?: stringResource(R.string.label_chapters).uppercase(),
-                fontFamily = SpaceMonoFamily,
-                fontSize = 11.sp,
-                color = NothingWhite,
-                letterSpacing = 1.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Dotted Progress Bar ───────────────────────────────────────────
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(modifier = Modifier.padding(horizontal = 12.dp)) {
-                DottedProgressBar(
-                    progress = if (uiState.durationMs > 0) (uiState.positionMs.toFloat() / uiState.durationMs).coerceIn(0f, 1f) else 0f,
-                    onSeek   = { frac -> 
-                        performClick()
-                        playerViewModel.seekTo((frac * uiState.durationMs).toLong()) 
-                    }
-                )
-            }
-            Row(
-                modifier              = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp) // Aligned with the new wider bar
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(formatMs(uiState.positionMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
-                Text(formatMs(uiState.durationMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // ── Controls ───────────────────────────────────────────────────────
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally)
-        ) {
-            // Backward
-            Box(
-                modifier = Modifier.size(80.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Interactive Area
-                Box(
-                    modifier = Modifier
-                        .size(54.dp) // Smaller interactive area
-                        .clip(CircleShape)
-                        .clickable { 
-                            performClick()
-                            playerViewModel.skipBackward() 
-                        }
-                )
-                
-                // Visual content (icon and text)
-                DotIconSkip(direction = -1)
-                Text(
-                    text = "${skipBwd}s",
-                    fontFamily = SpaceMonoFamily,
-                    fontSize = 10.sp,
-                    color = NothingOnSurfaceDim,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(top = 36.dp)
-                )
-            }
-
-            // Play/Pause
-            Box(
-                modifier = Modifier.size(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Interactive Area (Exact 92dp circle)
-                Box(
-                    modifier = Modifier
-                        .size(92.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = {
-                            performClick()
-                            playerViewModel.togglePlayPause()
-                        })
-                )
-
-                DotIconPlayPause(isPlaying = uiState.isPlaying)
-            }
-
-            // Forward
-            Box(
-                modifier = Modifier.size(80.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Interactive Area
-                Box(
-                    modifier = Modifier
-                        .size(54.dp) // Smaller interactive area
-                        .clip(CircleShape)
-                        .clickable { 
-                            performClick()
-                            playerViewModel.skipForward() 
-                        }
-                )
-
-                // Visual content
-                DotIconSkip(direction = 1)
-                Text(
-                    text = "${skipFwd}s",
-                    fontFamily = SpaceMonoFamily,
-                    fontSize = 10.sp,
-                    color = NothingOnSurfaceDim,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(top = 36.dp)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // ── Speed Bar ──────────────────────────────────────────────────────
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showSpeedSelector,
-            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
-        ) {
-            SpeedBar(
-                currentSpeed = uiState.playbackSpeed,
-                onPerformClick = performClick,
-                onSpeedChange = { speed ->
-                    playerViewModel.setSpeed(speed)
-                    showSpeedSelector = false
-                }
-            )
-        }
-
+        // --- Shared Dialogs ---
         if (showNotes) {
             PlayerInfoBottomSheet(
                 title     = stringResource(R.string.label_episode_notes),
@@ -386,102 +174,516 @@ fun PlayerScreen(
                 onDismiss = { showTranscript = false }
             )
         }
+    }
+}
+
+@Composable
+private fun PlayerPortraitContent(
+    episode: com.example.nothingpodcast.domain.model.Episode,
+    uiState: PlayerUiState,
+    skipFwd: Int,
+    skipBwd: Int,
+    showSpeedSelector: Boolean,
+    onDismiss: () -> Unit,
+    onToggleSpeed: () -> Unit,
+    onShowAudioOutput: () -> Unit,
+    onShowChapters: () -> Unit,
+    onShowNotes: () -> Unit,
+    onShowTranscript: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onSkipForward: () -> Unit,
+    onSkipBackward: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onSpeedChange: (Float) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        PlayerTopBar(
+            podcastTitle = episode.podcastTitle,
+            onDismiss = onDismiss,
+            onShowAudioOutput = onShowAudioOutput
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        PlayerArtwork(imageUrl = episode.imageUrl, title = episode.title, modifier = Modifier.size(280.dp))
+
+        Spacer(Modifier.height(32.dp))
+
+        PlayerEpisodeInfo(episode = episode)
+
+        Spacer(Modifier.height(16.dp))
+
+        PlayerTitle(title = episode.title)
+
+        Spacer(Modifier.height(24.dp))
+
+        PlayerChapterBar(
+            chapters = episode.chapters,
+            positionMs = uiState.positionMs,
+            onClick = onShowChapters
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        PlayerProgressBar(
+            positionMs = uiState.positionMs,
+            durationMs = uiState.durationMs,
+            onSeek = onSeek
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        PlayerControls(
+            isPlaying = uiState.isPlaying,
+            skipFwd = skipFwd,
+            skipBwd = skipBwd,
+            onTogglePlayPause = onTogglePlayPause,
+            onSkipForward = onSkipForward,
+            onSkipBackward = onSkipBackward
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        androidx.compose.animation.AnimatedVisibility(visible = showSpeedSelector) {
+            SpeedBar(
+                currentSpeed = uiState.playbackSpeed,
+                onPerformClick = {},
+                onSpeedChange = onSpeedChange
+            )
+        }
 
         Spacer(Modifier.weight(1f))
 
-        // ── Bottom Utilities ───────────────────────────────────────────────
-        Row(
+        PlayerBottomUtilities(
+            hasTranscript = !episode.transcriptUrl.isNullOrBlank(),
+            playbackSpeed = uiState.playbackSpeed,
+            showSpeedSelector = showSpeedSelector,
+            onShowNotes = onShowNotes,
+            onShowTranscript = onShowTranscript,
+            onToggleSpeed = onToggleSpeed
+        )
+    }
+}
+
+@Composable
+private fun PlayerLandscapeContent(
+    episode: com.example.nothingpodcast.domain.model.Episode,
+    uiState: PlayerUiState,
+    skipFwd: Int,
+    skipBwd: Int,
+    showSpeedSelector: Boolean,
+    onDismiss: () -> Unit,
+    onToggleSpeed: () -> Unit,
+    onShowAudioOutput: () -> Unit,
+    onShowChapters: () -> Unit,
+    onShowNotes: () -> Unit,
+    onShowTranscript: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onSkipForward: () -> Unit,
+    onSkipBackward: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onSpeedChange: (Float) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left Column: Artwork
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .weight(1f)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.Center
         ) {
-            // Info button in bottom left
+            PlayerArtwork(
+                imageUrl = episode.imageUrl,
+                title = episode.title,
+                modifier = Modifier.size(240.dp)
+            )
+        }
+
+        Spacer(Modifier.width(32.dp))
+
+        // Right Column: Info & Controls
+        Column(
+            modifier = Modifier
+                .weight(1.5f)
+                .fillMaxHeight()
+        ) {
+            PlayerTopBar(
+                podcastTitle = episode.podcastTitle,
+                onDismiss = onDismiss,
+                onShowAudioOutput = onShowAudioOutput
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            PlayerTitle(title = episode.title, textAlign = TextAlign.Start)
+            
+            Spacer(Modifier.height(16.dp))
+
+            PlayerProgressBar(
+                positionMs = uiState.positionMs,
+                durationMs = uiState.durationMs,
+                onSeek = onSeek
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            PlayerControls(
+                isPlaying = uiState.isPlaying,
+                skipFwd = skipFwd,
+                skipBwd = skipBwd,
+                onTogglePlayPause = onTogglePlayPause,
+                onSkipForward = onSkipForward,
+                onSkipBackward = onSkipBackward
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            if (showSpeedSelector) {
+                SpeedBar(
+                    currentSpeed = uiState.playbackSpeed,
+                    onPerformClick = {},
+                    onSpeedChange = onSpeedChange
+                )
+            } else {
+                PlayerBottomUtilities(
+                    hasTranscript = !episode.transcriptUrl.isNullOrBlank(),
+                    playbackSpeed = uiState.playbackSpeed,
+                    showSpeedSelector = showSpeedSelector,
+                    onShowNotes = onShowNotes,
+                    onShowTranscript = onShowTranscript,
+                    onToggleSpeed = onToggleSpeed
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerTopBar(
+    podcastTitle: String,
+    onDismiss: () -> Unit,
+    onShowAudioOutput: () -> Unit
+) {
+    Row(
+        modifier          = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Outlined.KeyboardArrowDown, "Close", tint = NothingWhite)
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = podcastTitle.uppercase(),
+            fontFamily = NType82Family,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            letterSpacing = 1.5.sp,
+            color = NothingOnSurfaceVariant
+        )
+        Spacer(Modifier.weight(1f))
+        
+        IconButton(onClick = onShowAudioOutput) {
+            Icon(Icons.Outlined.SpeakerGroup, "Uscita audio", tint = NothingOnSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun PlayerArtwork(imageUrl: String, title: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .border(1.dp, NothingWhite)
+            .background(NothingBlack),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model              = imageUrl,
+            contentDescription = title,
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.Episode) {
+    val infoParts = mutableListOf<String>()
+    episode.season?.takeIf { it > 0 }?.let { infoParts.add("STAGIONE $it") }
+    episode.episodeNumber?.let { infoParts.add("EPISODIO $it") }
+    
+    val metaText = infoParts.joinToString(" • ")
+    if (metaText.isNotEmpty() || !episode.episodeType.isNullOrBlank()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (metaText.isNotEmpty()) {
+                Text(
+                    text = metaText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NothingOnSurfaceDim,
+                    fontFamily = NType82Family
+                )
+            }
+            if (!episode.episodeType.isNullOrBlank() && episode.episodeType != "full") {
+                if (metaText.isNotEmpty()) {
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = NothingOnSurfaceDim
+                    )
+                }
+                Surface(
+                    color = NothingRed.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = episode.episodeType!!.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = NothingRed,
+                        fontFamily = NType82Family,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerTitle(title: String, textAlign: TextAlign = TextAlign.Center) {
+    Text(
+        text      = title,
+        fontFamily = OutfitFamily,
+        fontSize   = 20.sp,
+        fontWeight = FontWeight.SemiBold,
+        color     = NothingWhite,
+        textAlign = textAlign,
+        lineHeight = 26.sp,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+    )
+}
+
+@Composable
+private fun PlayerChapterBar(
+    chapters: List<com.example.nothingpodcast.domain.model.Chapter>,
+    positionMs: Long,
+    onClick: () -> Unit
+) {
+    val currentChapter = remember(chapters, positionMs) {
+        val currentSeconds = positionMs / 1000
+        chapters.findLast { it.startTime <= currentSeconds }
+    }
+
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.List,
+            contentDescription = "Capitoli",
+            tint = NothingWhite,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = currentChapter?.title?.uppercase() ?: stringResource(R.string.label_chapters).uppercase(),
+            fontFamily = NType82Family,
+            fontSize = 11.sp,
+            color = NothingWhite,
+            letterSpacing = 1.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun PlayerProgressBar(
+    positionMs: Long,
+    durationMs: Long,
+    onSeek: (Long) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(modifier = Modifier.padding(horizontal = 0.dp)) {
+            DottedProgressBar(
+                progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f,
+                onSeek   = { frac -> onSeek((frac * durationMs).toLong()) }
+            )
+        }
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(formatMs(positionMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
+            Text(formatMs(durationMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
+        }
+    }
+}
+
+@Composable
+private fun PlayerControls(
+    isPlaying: Boolean,
+    skipFwd: Int,
+    skipBwd: Int,
+    onTogglePlayPause: () -> Unit,
+    onSkipForward: () -> Unit,
+    onSkipBackward: () -> Unit
+) {
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally)
+    ) {
+        // Backward
+        Box(
+            modifier = Modifier.size(80.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { showNotes = true }
-                    .padding(8.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Note",
-                        tint = NothingOnSurfaceDim,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "NOTE",
-                        fontFamily = SpaceMonoFamily,
-                        fontSize = 10.sp,
-                        color = NothingOnSurfaceDim,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onSkipBackward)
+            )
+            DotIconSkip(direction = -1)
+            Text(
+                text = "${skipBwd}s",
+                fontFamily = NType82Family,
+                fontSize = 10.sp,
+                color = NothingOnSurfaceDim,
+                modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
+            )
+        }
 
-            // Transcript button (Podcasting 2.0)
-            if (!episode.transcriptUrl.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { 
-                            playerViewModel.fetchTranscript()
-                            showTranscript = true 
-                        }
-                        .padding(8.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Description,
-                            contentDescription = "Trascrizione",
-                            tint = NothingOnSurfaceDim,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "TESTO",
-                            fontFamily = SpaceMonoFamily,
-                            fontSize = 10.sp,
-                            color = NothingOnSurfaceDim,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+        // Play/Pause
+        Box(
+            modifier = Modifier.size(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(92.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onTogglePlayPause)
+            )
+            DotIconPlayPause(isPlaying = isPlaying)
+        }
 
-            // Speed toggle in bottom right
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { 
-                            performClick()
-                            showSpeedSelector = !showSpeedSelector 
-                        }
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Speed,
-                        contentDescription = "Velocità",
-                        tint = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .padding(bottom = 1.dp) // Lift it slightly to avoid looking cut off at flat base
-                    )
-                    Spacer(Modifier.height(1.dp))
-                    Text(
-                        text = "${uiState.playbackSpeed}x",
-                        fontFamily = SpaceMonoFamily,
-                        fontSize = 10.sp,
-                        color = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        // Forward
+        Box(
+            modifier = Modifier.size(80.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onSkipForward)
+            )
+            DotIconSkip(direction = 1)
+            Text(
+                text = "${skipFwd}s",
+                fontFamily = NType82Family,
+                fontSize = 10.sp,
+                color = NothingOnSurfaceDim,
+                modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerBottomUtilities(
+    hasTranscript: Boolean,
+    playbackSpeed: Float,
+    showSpeedSelector: Boolean,
+    onShowNotes: () -> Unit,
+    onShowTranscript: () -> Unit,
+    onToggleSpeed: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Info button
+        UtilityButton(
+            icon = Icons.Outlined.Info,
+            label = "NOTE",
+            onClick = onShowNotes
+        )
+
+        // Transcript button
+        if (hasTranscript) {
+            UtilityButton(
+                icon = Icons.Outlined.Description,
+                label = "TESTO",
+                onClick = onShowTranscript
+            )
+        }
+
+        // Speed toggle
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onToggleSpeed)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Outlined.Speed,
+                    contentDescription = "Velocità",
+                    tint = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "${playbackSpeed}x",
+                    fontFamily = NType82Family,
+                    fontSize = 10.sp,
+                    color = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim,
+                    fontWeight = FontWeight.Bold
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun UtilityButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = NothingOnSurfaceDim,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = label,
+                fontFamily = NType82Family,
+                fontSize = 10.sp,
+                color = NothingOnSurfaceDim,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -622,7 +824,7 @@ private fun SpeedBar(
                 val isSelected = speed == currentSpeed
                 Text(
                     text = "${speed}x",
-                    fontFamily = SpaceMonoFamily,
+                    fontFamily = NType82Family,
                     fontSize = 11.sp,
                     color = if (isSelected) NothingWhite else NothingOnSurfaceDim,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -861,7 +1063,8 @@ private fun PlayerInfoBottomSheet(
             Text(
                 text  = content,
                 style = MaterialTheme.typography.bodyLarge,
-                color = NothingOnSurfaceVariant
+                color = NothingOnSurfaceVariant,
+                fontFamily = OutfitFamily
             )
         }
     }
@@ -1103,7 +1306,7 @@ private fun AudioOutputBottomSheet(
         ) {
             Text(
                 text = "USCITA AUDIO",
-                fontFamily = SpaceMonoFamily,
+                fontFamily = NType82Family,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = NothingWhite,
@@ -1307,7 +1510,7 @@ private fun AudioOutputBottomSheet(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = if (isNothing) "NOTHING DEVICE" else "CMF DEVICE",
-                                            fontFamily = SpaceMonoFamily,
+                                            fontFamily = NType82Family,
                                             fontSize = 9.sp,
                                             color = if (isActive) NothingRed else NothingOnSurfaceDim,
                                             letterSpacing = 1.sp
@@ -1384,7 +1587,7 @@ private fun AudioOutputBottomSheet(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "NOTHING X",
-                                    fontFamily = SpaceMonoFamily,
+                                    fontFamily = NType82Family,
                                     color = NothingRed,
                                     fontSize = 11.sp,
                                     letterSpacing = 2.sp,
@@ -1707,7 +1910,8 @@ private fun TranscriptBottomSheet(
                 text = "TRASCRIZIONE",
                 style = MaterialTheme.typography.headlineSmall,
                 color = NothingWhite,
-                fontFamily = OutfitFamily
+                fontFamily = NType82Family,
+                letterSpacing = 3.sp
             )
 
             Spacer(Modifier.height(16.dp))

@@ -23,6 +23,7 @@ import com.example.nothingpodcast.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.text.font.FontWeight
 import com.example.nothingpodcast.ui.theme.*
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateDpAsState
@@ -106,6 +107,7 @@ fun SettingsScreen(
             if (account != null) {
                 scope.launch { 
                     snackbarHostState.showSnackbar("Accesso Google effettuato")
+                    viewModel.refreshCloudSummary(account)
                     // Se siamo nel menu Cloud, forziamo il refresh dello stato (re-composing)
                     if (currentMenu == SettingsMenu.CLOUD) {
                         currentMenu = SettingsMenu.MAIN
@@ -187,6 +189,7 @@ fun SettingsScreen(
                     var account by remember { mutableStateOf(com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(context)) }
                     CloudSyncMenu(
                         account = account,
+                        uiState = uiState,
                         onSignIn = { 
                             googleSignInLauncher.launch(viewModel.driveService.getGoogleSignInClient().signInIntent) 
                         },
@@ -200,7 +203,10 @@ fun SettingsScreen(
                             if (account != null) {
                                 viewModel.uploadToDrive(account) { res ->
                                     scope.launch {
-                                        if (res.isSuccess) snackbarHostState.showSnackbar("Caricato su Drive")
+                                        if (res.isSuccess) {
+                                            snackbarHostState.showSnackbar("Caricato su Drive")
+                                            viewModel.refreshCloudSummary(account)
+                                        }
                                         else snackbarHostState.showSnackbar("Errore caricamento")
                                     }
                                 }
@@ -223,6 +229,11 @@ fun SettingsScreen(
                         },
                         onBack = { currentMenu = SettingsMenu.MAIN }
                     )
+                    
+                    // Trigger refresh when entering the menu
+                    LaunchedEffect(account) {
+                        account?.let { viewModel.refreshCloudSummary(it) }
+                    }
                 }
                 SettingsMenu.ABOUT -> {
                     AboutSettingsMenu(
@@ -287,7 +298,7 @@ private fun MainSettingsMenu(
             }
             Text(
                 text  = stringResource(R.string.header_settings),
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize = 24.sp,
                 color = NothingWhite
             )
@@ -462,7 +473,7 @@ private fun AdvancedSettingsMenu(
             }
             Text(
                 text       = "Impostazioni avanzate",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize   = 24.sp,
                 color      = NothingWhite
             )
@@ -508,7 +519,7 @@ private fun LogsSettingsMenu(
             }
             Text(
                 text       = "Log di sistema",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize   = 24.sp,
                 color      = NothingWhite
             )
@@ -608,7 +619,7 @@ private fun PermissionsMenu(onBack: () -> Unit) {
             }
             Text(
                 text = "Gestisci autorizzazioni",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize = 24.sp,
                 color = NothingWhite
             )
@@ -712,7 +723,7 @@ private fun OpmlSettingsMenu(
             }
             Text(
                 text       = "Gestione OPML",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize   = 24.sp,
                 color      = NothingWhite
             )
@@ -801,7 +812,7 @@ private fun AboutSettingsMenu(
             }
             Text(
                 text       = stringResource(R.string.header_about),
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize   = 24.sp,
                 color      = NothingWhite
             )
@@ -997,6 +1008,7 @@ private fun SettingsInfoRow(label: String, value: String) {
 @Composable
 private fun CloudSyncMenu(
     account: com.google.android.gms.auth.api.signin.GoogleSignInAccount?,
+    uiState: SettingsUiState,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onUpload: () -> Unit,
@@ -1019,7 +1031,7 @@ private fun CloudSyncMenu(
             }
             Text(
                 text = "Sincronizzazione Cloud",
-                fontFamily = PlayfairFamily,
+                fontFamily = NType82Family,
                 fontSize = 24.sp,
                 color = NothingWhite
             )
@@ -1051,6 +1063,20 @@ private fun CloudSyncMenu(
 
         HorizontalDivider(color = NothingBorderDim, modifier = Modifier.padding(vertical = 8.dp))
 
+        // ── Comparison Card ──────────────────────────────────────────────────
+        if (account != null) {
+            SyncComparisonCard(
+                localCount = uiState.localPodcastCount,
+                cloudCount = uiState.cloudSyncSummary?.podcastCount ?: 0,
+                lastSync = uiState.cloudSyncSummary?.lastSyncTimestamp,
+                totalEpisodes = uiState.totalEpisodeCount,
+                playedEpisodes = uiState.playedEpisodeCount,
+                cloudPlayedEpisodes = uiState.cloudSyncSummary?.playedEpisodeCount ?: 0,
+                cloudTotalEpisodes = uiState.cloudSyncSummary?.totalEpisodeCount ?: 0
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+
         SettingsClickRow(
             label = "Carica su Drive",
             subtitle = "Salva lo stato attuale sul cloud",
@@ -1062,5 +1088,92 @@ private fun CloudSyncMenu(
             subtitle = "Recupera i dati salvati su questo dispositivo",
             onClick = onDownload
         )
+    }
+}
+
+@Composable
+private fun SyncComparisonCard(
+    localCount: Int,
+    cloudCount: Int,
+    lastSync: Long?,
+    totalEpisodes: Int,
+    playedEpisodes: Int,
+    cloudPlayedEpisodes: Int,
+    cloudTotalEpisodes: Int
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        color = NothingSurfaceHigh,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, NothingBorderDim)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Locale
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("LOCALE", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
+                    Text(
+                        text = localCount.toString(),
+                        fontSize = 32.sp,
+                        fontFamily = SpaceMonoFamily,
+                        fontWeight = FontWeight.Bold,
+                        color = NothingWhite
+                    )
+                    Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "$playedEpisodes / $totalEpisodes riprodotti",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp
+                    )
+                }
+
+                // Divider (Vertical)
+                Box(modifier = Modifier.width(1.dp).height(40.dp).background(NothingBorderDim))
+
+                // Cloud
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("CLOUD", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
+                    Text(
+                        text = if (lastSync != null) cloudCount.toString() else "--",
+                        fontSize = 32.sp,
+                        fontFamily = SpaceMonoFamily,
+                        fontWeight = FontWeight.Bold,
+                        color = if (lastSync != null) NothingWhite else NothingOnSurfaceVariant
+                    )
+                    Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
+                    if (lastSync != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = if (cloudTotalEpisodes > 0) "$cloudPlayedEpisodes / $cloudTotalEpisodes riprodotti" else "$cloudPlayedEpisodes riprodotti",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+
+            if (lastSync != null) {
+                Spacer(Modifier.height(16.dp))
+                val date = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.ITALIAN).format(java.util.Date(lastSync))
+                Text(
+                    text = "Ultimo backup: $date",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NothingOnSurfaceDim,
+                    fontFamily = SpaceMonoFamily
+                )
+            }
+        }
     }
 }

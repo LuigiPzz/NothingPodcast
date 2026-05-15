@@ -40,7 +40,7 @@
     <string name="action_downloads">Download</string>
     <string name="action_back">Indietro</string>
     <string name="action_mark_played">Contrassegna come riprodotto</string>
-    <string name="action_mark_unplayed">Segna come non letto</string>
+    <string name="action_mark_unplayed">Contrassegna come non riprodotto</string>
     <string name="action_delete_download">Elimina download</string>
     <string name="action_refresh">Aggiorna</string>
     <string name="action_multi_selection">Selezione multipla</string>

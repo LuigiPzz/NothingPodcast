@@ -32,19 +32,22 @@ class SyncRepository @Inject constructor(
         val feedUrl: String,
         val title: String,
         val orderIndex: Int,
-        val playedEpisodes: List<String>
+        val playedEpisodes: List<String>,
+        val totalEpisodes: Int = 0 // Add total episodes count
     )
 
     suspend fun upload(account: GoogleSignInAccount): Result<Unit> = runCatching {
         val podcasts = podcastDao.getSubscribedPodcasts().first()
         val syncInfo = podcasts.map { p ->
             val played = episodeDao.getPlayedEpisodesForPodcast(p.id).first()
+            val total = episodeDao.getCountForPodcast(p.id)
             PodcastSyncInfo(
                 id = p.id,
                 feedUrl = p.feedUrl,
                 title = p.title,
                 orderIndex = p.orderIndex,
-                playedEpisodes = played.map { it.id }
+                playedEpisodes = played.map { it.id },
+                totalEpisodes = total
             )
         }
         val data = SyncData(podcasts = syncInfo, settings = emptyMap())
@@ -57,6 +60,28 @@ class SyncRepository @Inject constructor(
         applyRemoteData(data)
         data.podcasts.size
     }
+
+    suspend fun getRemoteSyncSummary(account: GoogleSignInAccount): Result<SyncSummary?> = runCatching {
+        val json = driveService.downloadSyncFile(account) ?: return Result.success(null)
+        val data = gson.fromJson(json, SyncData::class.java)
+        
+        val totalPlayedInCloud = data.podcasts.sumOf { it.playedEpisodes.size }
+        val totalEpisodesInCloud = data.podcasts.sumOf { it.totalEpisodes }
+        
+        SyncSummary(
+            podcastCount = data.podcasts.size,
+            playedEpisodeCount = totalPlayedInCloud,
+            totalEpisodeCount = totalEpisodesInCloud,
+            lastSyncTimestamp = System.currentTimeMillis() // Placeholder
+        )
+    }
+
+    data class SyncSummary(
+        val podcastCount: Int,
+        val playedEpisodeCount: Int,
+        val totalEpisodeCount: Int,
+        val lastSyncTimestamp: Long
+    )
 
     private suspend fun applyRemoteData(data: SyncData) {
         val localPodcasts = podcastDao.getSubscribedPodcasts().first()

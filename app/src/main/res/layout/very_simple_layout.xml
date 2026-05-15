@@ -1,92 +1,89 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/widget_background"
-    android:padding="12dp"
-    android:gravity="center">
+    android:background="@drawable/widget_background">
 
-    <!-- Header Block (Centered) -->
-    <LinearLayout
-        android:id="@+id/widget_header_container"
+    <!-- EMPTY STATE COVER -->
+    <ImageView
+        android:id="@+id/widget_empty_cover"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="100dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/nothing_podcast_empty_cover"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/widget_player_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="?android:attr/selectableItemBackground">
-        
-        <TextView
-            android:id="@+id/simple_text_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Podcast Title"
-            android:textColor="#FFFFFF"
-            android:textSize="17sp"
-            android:fontFamily="@font/space_mono_font"
-            android:gravity="center"
-            android:singleLine="true"
-            android:ellipsize="marquee"
-            android:marqueeRepeatLimit="marquee_forever"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:scrollHorizontally="true" />
+        android:paddingHorizontal="16dp"
+        android:visibility="visible">
 
-        <TextView
-            android:id="@+id/simple_text_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="00:00 / 00:00"
-            android:textColor="#9A9690"
-            android:textSize="11sp"
-            android:fontFamily="@font/space_mono_font"
-            android:layout_marginTop="4dp" />
-    </LinearLayout>
-
-    <!-- Progress Bar (with 22dp margin) -->
-    <ImageView
-        android:id="@+id/simple_progress_image"
-        android:layout_width="match_parent"
-        android:layout_height="22dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginHorizontal="22dp"
-        android:scaleType="fitCenter" />
-
-    <!-- Controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="12dp">
-
+        <!-- Title -->
         <ImageView
-            android:id="@+id/simple_btn_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="4dp"
-            android:src="@drawable/widget_dot_skip_backward"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
+            android:id="@+id/widget_header_styled"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:scaleType="fitCenter" />
 
-        <FrameLayout
-            android:id="@+id/simple_btn_play_container"
-            android:layout_width="58dp"
-            android:layout_height="58dp"
-            android:layout_marginHorizontal="28dp">
+        <!-- Progress -->
+        <ImageView
+            android:id="@+id/simple_progress_image"
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:layout_marginTop="14dp"
+            android:scaleType="fitCenter" />
+
+        <!-- Times (Left/Right) -->
+        <ImageView
+            android:id="@+id/widget_times_styled"
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:layout_marginTop="0dp"
+            android:scaleType="fitCenter" />
+
+        <!-- Controls (Below Progress/Times) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
             <ImageView
-                android:id="@+id/simple_btn_play"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:src="@drawable/widget_dot_play" />
-        </FrameLayout>
+                android:id="@+id/simple_btn_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/widget_dot_skip_backward"
+                android:scaleType="fitCenter" />
 
-        <ImageView
-            android:id="@+id/simple_btn_forward"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="4dp"
-            android:src="@drawable/widget_dot_skip_forward"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
+            <FrameLayout
+                android:id="@+id/simple_btn_play_container"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="16dp">
+                
+                <ImageView
+                    android:id="@+id/simple_btn_play"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="0dp"
+                    android:src="@drawable/widget_dot_play"
+                    android:scaleType="fitCenter" />
+            </FrameLayout>
+
+            <ImageView
+                android:id="@+id/simple_btn_forward"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/widget_dot_skip_forward"
+                android:scaleType="fitCenter" />
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</FrameLayout>

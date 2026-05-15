@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -12,6 +14,10 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import android.graphics.Color
+import androidx.compose.ui.unit.sp
+import androidx.glance.action.clickable
+import androidx.glance.currentState
+import androidx.glance.state.PreferencesGlanceStateDefinition
 
 class NothingPodcastWidget : GlanceAppWidget() {
 
@@ -19,26 +25,46 @@ class NothingPodcastWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            Column(
+            val prefs = currentState<androidx.datastore.preferences.core.Preferences>()
+            val podcastTitle = prefs[KEY_PODCAST_TITLE] ?: "Nothing Podcast"
+            val episodeTitle = prefs[KEY_EPISODE_TITLE] ?: "Nessun episodio"
+            val isEmpty = episodeTitle == "Nessun episodio" || episodeTitle.isBlank()
+
+            Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(ColorProvider(Color.BLACK))
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .background(ColorProvider(Color.parseColor("#161616")))
+                    .clickable(androidx.glance.action.actionStartActivity<com.example.nothingpodcast.MainActivity>()),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Nothing Podcast",
-                    style = TextStyle(
-                        color = ColorProvider(Color.WHITE)
+                if (isEmpty) {
+                    Image(
+                        provider = androidx.glance.ImageProvider(com.example.nothingpodcast.R.drawable.nothing_podcast_empty_cover),
+                        contentDescription = "Empty Cover",
+                        modifier = GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 100.dp),
+                        contentScale = ContentScale.Crop
                     )
-                )
-                Text(
-                    text = "Versione Semplice",
-                    style = TextStyle(
-                        color = ColorProvider(Color.GRAY)
-                    )
-                )
+                } else {
+                    Column(
+                        modifier = GlanceModifier.fillMaxSize().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = podcastTitle,
+                            style = TextStyle(
+                                color = ColorProvider(Color.WHITE),
+                                fontSize = 15.sp,
+                                fontFamily = androidx.glance.text.FontFamily("ndot55")
+                            )
+                        )
+                        Spacer(GlanceModifier.height(4.dp))
+                        Text(
+                            text = episodeTitle,
+                            style = TextStyle(color = ColorProvider(Color.LTGRAY), fontSize = 9.sp, fontFamily = androidx.glance.text.FontFamily.SansSerif)
+                        )
+                    }
+                }
             }
         }
     }

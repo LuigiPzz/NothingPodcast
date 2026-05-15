@@ -25,28 +25,29 @@ class NothingLegacyWidgetReceiver : AppWidgetProvider() {
             putExtra("OPEN_PLAYER", true)
         }
         val openAppPending = PendingIntent.getActivity(context, 20, openAppIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        views.setOnClickPendingIntent(R.id.widget_header_container, openAppPending)
+        views.setOnClickPendingIntent(R.id.widget_player_container, openAppPending)
         views.setOnClickPendingIntent(R.id.simple_progress_image, openAppPending)
+        views.setOnClickPendingIntent(R.id.widget_empty_cover, openAppPending)
 
         // Play/Pause - Click on container for better touch area
         val playPauseIntent = Intent(context, PodcastPlaybackService::class.java).apply {
             action = PodcastPlaybackService.COMMAND_PLAY_PAUSE
         }
-        val playPausePending = PendingIntent.getService(context, 11, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val playPausePending = PendingIntent.getForegroundService(context, 11, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.simple_btn_play_container, playPausePending)
 
         // Skip Back
         val skipBackIntent = Intent(context, PodcastPlaybackService::class.java).apply {
             action = PodcastPlaybackService.COMMAND_SKIP_BACKWARD
         }
-        val skipBackPending = PendingIntent.getService(context, 10, skipBackIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val skipBackPending = PendingIntent.getForegroundService(context, 10, skipBackIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.simple_btn_back, skipBackPending)
 
         // Skip Forward
         val skipForwardIntent = Intent(context, PodcastPlaybackService::class.java).apply {
             action = PodcastPlaybackService.COMMAND_SKIP_FORWARD
         }
-        val skipForwardPending = PendingIntent.getService(context, 12, skipForwardIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val skipForwardPending = PendingIntent.getForegroundService(context, 12, skipForwardIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.simple_btn_forward, skipForwardPending)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
