@@ -384,10 +384,7 @@ private fun PlayerTopBar(
         Spacer(Modifier.weight(1f))
         Text(
             text = podcastTitle.uppercase(),
-            fontFamily = NType82Family,
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            letterSpacing = 1.5.sp,
+            style = MaterialTheme.typography.labelMedium,
             color = NothingOnSurfaceVariant
         )
         Spacer(Modifier.weight(1f))
@@ -461,12 +458,9 @@ private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.E
 private fun PlayerTitle(title: String, textAlign: TextAlign = TextAlign.Center) {
     Text(
         text      = title,
-        fontFamily = OutfitFamily,
-        fontSize   = 20.sp,
-        fontWeight = FontWeight.SemiBold,
+        style     = MaterialTheme.typography.titleLarge,
         color     = NothingWhite,
         textAlign = textAlign,
-        lineHeight = 26.sp,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
     )
 }
@@ -524,8 +518,8 @@ private fun PlayerProgressBar(
             modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(formatMs(positionMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
-            Text(formatMs(durationMs), fontFamily = SpaceMonoFamily, fontSize = 10.sp, color = NothingOnSurfaceDim)
+            Text(formatMs(positionMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
+            Text(formatMs(durationMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
         }
     }
 }
@@ -648,10 +642,8 @@ private fun PlayerBottomUtilities(
                 )
                 Text(
                     text = "${playbackSpeed}x",
-                    fontFamily = NType82Family,
-                    fontSize = 10.sp,
-                    color = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (showSpeedSelector) NothingWhite else NothingOnSurfaceDim
                 )
             }
         }
@@ -679,10 +671,8 @@ private fun UtilityButton(
             )
             Text(
                 text = label,
-                fontFamily = NType82Family,
-                fontSize = 10.sp,
-                color = NothingOnSurfaceDim,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelSmall,
+                color = NothingOnSurfaceDim
             )
         }
     }
@@ -1063,8 +1053,7 @@ private fun PlayerInfoBottomSheet(
             Text(
                 text  = content,
                 style = MaterialTheme.typography.bodyLarge,
-                color = NothingOnSurfaceVariant,
-                fontFamily = OutfitFamily
+                color = NothingOnSurfaceVariant
             )
         }
     }
@@ -1910,7 +1899,6 @@ private fun TranscriptBottomSheet(
                 text = "TRASCRIZIONE",
                 style = MaterialTheme.typography.headlineSmall,
                 color = NothingWhite,
-                fontFamily = NType82Family,
                 letterSpacing = 3.sp
             )
 
@@ -1930,16 +1918,13 @@ private fun TranscriptBottomSheet(
                 Text(
                     text = content,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = NothingOnSurfaceVariant,
-                    fontFamily = OutfitFamily,
-                    lineHeight = 26.sp
+                    color = NothingOnSurfaceVariant
                 )
             } else {
                 Text(
                     text = "Impossibile caricare la trascrizione.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = NothingOnSurfaceDim,
-                    fontFamily = OutfitFamily
+                    color = NothingOnSurfaceDim
                 )
             }
         }

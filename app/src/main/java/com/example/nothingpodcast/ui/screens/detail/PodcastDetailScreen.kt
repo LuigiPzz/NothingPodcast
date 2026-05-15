@@ -287,13 +287,9 @@ private fun PodcastHeader(
             ) {
                 Text(
                     text = podcast.title,
-                    fontFamily = NType82Family,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
+                    style = MaterialTheme.typography.displaySmall,
                     color = NothingWhite,
                     maxLines = 3,
-                    lineHeight = 30.sp,
-                    letterSpacing = 0.5.sp,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
@@ -344,8 +340,7 @@ private fun PodcastHeader(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = podcast.author,
-                fontFamily = OutfitFamily,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = NothingOnSurfaceDim,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -498,9 +493,7 @@ private fun EpisodeListItem(
 
             Text(
                 text     = episode.title,
-                fontFamily = OutfitFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
+                style    = MaterialTheme.typography.titleMedium,
                 color    = if (episode.isPlayed && !isPlaying) NothingOnSurfaceVariant else NothingWhite,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

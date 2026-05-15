@@ -61,7 +61,11 @@ class NothingPodcastWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(4.dp))
                         Text(
                             text = episodeTitle,
-                            style = TextStyle(color = ColorProvider(Color.LTGRAY), fontSize = 9.sp, fontFamily = androidx.glance.text.FontFamily.SansSerif)
+                            style = TextStyle(
+                                color = ColorProvider(Color.LTGRAY),
+                                fontSize = 10.sp,
+                                fontFamily = androidx.glance.text.FontFamily("ntype82")
+                            )
                         )
                     }
                 }

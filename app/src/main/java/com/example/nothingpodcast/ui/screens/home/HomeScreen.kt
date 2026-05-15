@@ -109,11 +109,9 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text       = "Nothing Podcast",
-                    fontFamily = NType82Family,
-                    fontWeight = FontWeight.Normal,
-                    fontSize   = 30.sp,
-                    color      = NothingWhite,
+                    text     = "Nothing Podcast",
+                    style    = MaterialTheme.typography.displayMedium,
+                    color    = NothingWhite,
                     modifier   = Modifier.weight(1f)
                 )
                 ProfileMenu(
@@ -134,9 +132,7 @@ fun HomeScreen(
             ) {
                 Text(
                     text     = stringResource(R.string.label_subscriptions),
-                    fontFamily = NType82Family,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 20.sp,
+                    style    = MaterialTheme.typography.headlineSmall,
                     color    = NothingWhite,
                     modifier = Modifier.weight(1f)
                 )
@@ -394,15 +390,13 @@ private fun ProfileMenu(
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                     Text(
                         text = stringResource(R.string.label_account),
-                        fontFamily = OutfitFamily,
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = NothingOnSurfaceDim
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = userEmail,
-                        fontFamily = OutfitFamily,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = NothingWhite
                     )
                 }
@@ -413,8 +407,7 @@ private fun ProfileMenu(
                     text = { 
                         Text(
                             text = "Esci",
-                            fontFamily = OutfitFamily,
-                            fontSize = 12.sp
+                            style = MaterialTheme.typography.bodyMedium
                         ) 
                     },
                     leadingIcon = { Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(20.dp)) },
@@ -429,16 +422,13 @@ private fun ProfileMenu(
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                     Text(
                         text = "Ospite",
-                        fontFamily = OutfitFamily,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = NothingWhite
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = "Non loggato",
-                        fontFamily = OutfitFamily,
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = NothingOnSurfaceDim
                     )
                 }
@@ -449,8 +439,7 @@ private fun ProfileMenu(
                     text = { 
                         Text(
                             text = "Registrati o Accedi",
-                            fontFamily = OutfitFamily,
-                            fontSize = 12.sp
+                            style = MaterialTheme.typography.bodyMedium
                         ) 
                     },
                     leadingIcon = { Icon(Icons.Outlined.PersonAdd, null, modifier = Modifier.size(20.dp)) },
@@ -483,8 +472,7 @@ private fun ProfileMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.action_settings),
-                        fontFamily = OutfitFamily,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = NothingWhite
                     )
                 },
