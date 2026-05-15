@@ -22,6 +22,11 @@ val NDot55Family = FontFamily(
     Font(R.font.ndot55, FontWeight.Normal)
 )
 
+// NDot57 — Alternative Dot Matrix
+val NDot57Family = FontFamily(
+    Font(R.font.ndot57, FontWeight.Normal)
+)
+
 // NType82Mono — Monospace for technical data
 val NType82MonoFamily = FontFamily(
     Font(R.font.ntype82mono_regular, FontWeight.Normal)
@@ -32,19 +37,19 @@ val NType82MonoFamily = FontFamily(
 val NothingTypography = Typography(
     // ── Display: Large Titles (NDot55 for branding impact) ──────────────────
     displayLarge = TextStyle(
-        fontFamily = NDot55Family,
+        fontFamily = NDot57Family,
         fontSize = 42.sp,
         lineHeight = 50.sp,
         letterSpacing = 0.sp
     ),
     displayMedium = TextStyle(
-        fontFamily = NDot55Family,
+        fontFamily = NDot57Family,
         fontSize = 34.sp,
         lineHeight = 40.sp,
         letterSpacing = 0.sp
     ),
     displaySmall = TextStyle(
-        fontFamily = NDot55Family,
+        fontFamily = NDot57Family,
         fontSize = 28.sp,
         lineHeight = 34.sp,
         letterSpacing = 0.sp
