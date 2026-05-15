@@ -955,7 +955,12 @@ private fun PodcastListItem(
                     .padding(horizontal = 6.dp, vertical = 2.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(podcast.unplayedCount.toString(), style = MaterialTheme.typography.labelSmall, color = NothingOnBadge)
+                Text(
+                    text = podcast.unplayedCount.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = NDot55Family,
+                    color = NothingOnBadge
+                )
             }
         }
         Spacer(Modifier.width(6.dp))
@@ -1046,7 +1051,12 @@ private fun PodcastGridItem(
                         .border(1.dp, NothingWhite, CircleShape)
                         .padding(horizontal = 5.dp, vertical = 2.dp)
                 ) {
-                    Text(podcast.unplayedCount.toString(), style = MaterialTheme.typography.labelSmall, color = NothingOnBadge)
+                    Text(
+                        text = podcast.unplayedCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = NDot55Family,
+                        color = NothingOnBadge
+                    )
                 }
             }
         }
