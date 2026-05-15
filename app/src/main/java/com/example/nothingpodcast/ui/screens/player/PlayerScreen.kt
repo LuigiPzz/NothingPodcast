@@ -457,6 +457,8 @@ private fun PlayerTitle(title: String, textAlign: TextAlign = TextAlign.Center) 
     Text(
         text      = title,
         style     = MaterialTheme.typography.titleLarge,
+        fontFamily = SpaceMonoFamily,
+        fontSize  = 16.sp,
         color     = NothingWhite,
         textAlign = textAlign,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
