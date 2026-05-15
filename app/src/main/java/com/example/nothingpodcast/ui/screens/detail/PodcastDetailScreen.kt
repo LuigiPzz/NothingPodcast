@@ -484,6 +484,7 @@ private fun EpisodeListItem(
                 text     = episode.title,
                 style    = MaterialTheme.typography.titleMedium,
                 fontFamily = SpaceMonoFamily,
+                fontSize = 14.sp,
                 color    = if (episode.isPlayed && !isPlaying) NothingOnSurfaceVariant else NothingWhite,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
