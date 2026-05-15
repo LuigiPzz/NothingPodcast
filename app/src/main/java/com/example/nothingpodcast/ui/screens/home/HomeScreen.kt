@@ -161,7 +161,7 @@ fun HomeScreen(
 
                 if (uiState.isEditMode) {
                     TextButton(onClick = viewModel::saveOrder) {
-                        Text("FINE", color = NothingWhite, fontWeight = FontWeight.Bold, fontFamily = SpaceMonoFamily)
+                        Text("FINE", style = MaterialTheme.typography.labelLarge)
                     }
                 } else {
                     ViewModeMenu(
@@ -190,9 +190,8 @@ fun HomeScreen(
                             ) {
                                 Text(
                                     text = "Inizia la tua esperienza",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = NothingWhite,
-                                    fontFamily = SpaceMonoFamily
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = NothingWhite
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 Text(
@@ -458,8 +457,7 @@ private fun ProfileMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.action_downloads),
-                        fontFamily = OutfitFamily,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = NothingWhite
                     )
                 },
@@ -700,8 +698,7 @@ private fun SearchBottomSheet(
         ) {
             Text(
                 text       = stringResource(R.string.label_add_podcast),
-                fontFamily = NType82Family,
-                fontSize   = 24.sp,
+                style      = MaterialTheme.typography.displaySmall,
                 color      = NothingWhite,
                 modifier   = Modifier.padding(bottom = 14.dp)
             )

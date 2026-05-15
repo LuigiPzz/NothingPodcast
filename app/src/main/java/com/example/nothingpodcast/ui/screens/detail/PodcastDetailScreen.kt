@@ -177,9 +177,7 @@ fun PodcastDetailScreen(
                         } else {
                             Text(
                                 text     = "EPISODI",
-                                fontFamily = NType82Family,
-                                fontSize = 16.sp,
-                                letterSpacing = 3.sp,
+                                style    = MaterialTheme.typography.labelLarge,
                                 color    = NothingOnSurfaceDim,
                                 modifier = Modifier.weight(1f)
                             )
@@ -364,9 +362,7 @@ private fun PodcastHeader(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = (podcast.fundingText ?: "Support this podcast").uppercase(),
-                        fontFamily = SpaceMonoFamily,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
                         color = NothingWhite
                     )
                 }
@@ -441,9 +437,6 @@ private fun EpisodeListItem(
                         text = metaText,
                         style = MaterialTheme.typography.labelSmall,
                         color = NothingRed,
-                        fontFamily = SpaceMonoFamily,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(end = 4.dp)
                     )
                     Text(
@@ -458,18 +451,14 @@ private fun EpisodeListItem(
                 Text(
                     text = dateStr,
                     style = MaterialTheme.typography.labelSmall,
-                    color = NothingOnSurfaceDim,
-                    fontFamily = SpaceMonoFamily,
-                    fontSize = 10.sp
+                    color = NothingOnSurfaceDim
                 )
                 
                 if (durationStr.isNotBlank()) {
                     Text(
                         text = " • $durationStr",
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim,
-                        fontFamily = SpaceMonoFamily,
-                        fontSize = 10.sp
+                        color = NothingOnSurfaceDim
                     )
                 }
                 
@@ -537,14 +526,12 @@ private fun EpisodeListItem(
                     ) {
                         Text(
                             text = formatDurationMs(episode.playbackPosition * 1000),
-                            fontFamily = SpaceMonoFamily,
-                            fontSize = 10.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             color = NothingOnSurfaceDim
                         )
                         Text(
                             text = formatDurationMs(episode.duration * 1000),
-                            fontFamily = SpaceMonoFamily,
-                            fontSize = 10.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             color = NothingOnSurfaceDim
                         )
                     }
@@ -734,8 +721,7 @@ private fun FilterSortBottomSheet(
         ) {
             Text(
                 text = "Ordinamento e filtri",
-                fontFamily = NType82Family,
-                fontSize = 22.sp,
+                style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -876,16 +862,12 @@ private fun PodcastSummaryBottomSheet(
                 Column {
                     Text(
                         text = podcast.title,
-                        fontFamily = NType82Family,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NothingWhite,
-                        lineHeight = 24.sp
+                        style = MaterialTheme.typography.titleLarge,
+                        color = NothingWhite
                     )
                     Text(
                         text = podcast.author,
-                        fontFamily = NType82Family,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = NothingOnSurfaceDim
                     )
                     
@@ -899,9 +881,7 @@ private fun PodcastSummaryBottomSheet(
                                 text = podcast.medium!!.uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = NothingOnSurfaceVariant,
-                                fontFamily = NType82Family,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontSize = 8.sp
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -912,8 +892,7 @@ private fun PodcastSummaryBottomSheet(
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = podcast.locationName.uppercase(),
-                                fontFamily = NType82Family,
-                                fontSize = 10.sp,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = NothingOnSurfaceDim
                             )
                         }
@@ -933,7 +912,7 @@ private fun PodcastSummaryBottomSheet(
                 ) {
                     Icon(Icons.Outlined.Chat, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("PARTECIPA ALLA DISCUSSIONE", fontFamily = SpaceMonoFamily, fontSize = 12.sp)
+                    Text("PARTECIPA ALLA DISCUSSIONE", style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -954,8 +933,7 @@ private fun PodcastSummaryBottomSheet(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "LICENZA: ${podcast.licenseName.uppercase()}",
-                        fontFamily = NType82Family,
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = NothingOnSurfaceDim
                     )
                 }
@@ -965,8 +943,7 @@ private fun PodcastSummaryBottomSheet(
             
             Text(
                 text = "Descrizione",
-                fontFamily = NType82Family,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleSmall,
                 color = NothingWhite,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -982,8 +959,7 @@ private fun PodcastSummaryBottomSheet(
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = "CREDITI",
-                    fontFamily = NType82Family,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.titleSmall,
                     color = NothingWhite,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -1028,15 +1004,13 @@ private fun PodcastSummaryBottomSheet(
                         Column {
                             Text(
                                 text = person.name,
-                                fontFamily = SpaceMonoFamily,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = NothingWhite
                             )
                             if (!person.role.isNullOrBlank()) {
                                 Text(
                                     text = person.role.uppercase(),
-                                    fontFamily = SpaceMonoFamily,
-                                    fontSize = 10.sp,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = NothingOnSurfaceDim
                                 )
                             }
@@ -1060,8 +1034,7 @@ private fun PodcastSummaryBottomSheet(
             ) {
                 Text(
                     text = if (podcast.isSubscribed) "DISISCRIVITI" else "ISCRIVITI",
-                    fontFamily = SpaceMonoFamily,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
             

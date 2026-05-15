@@ -298,8 +298,7 @@ private fun MainSettingsMenu(
             }
             Text(
                 text  = stringResource(R.string.header_settings),
-                fontFamily = NType82Family,
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
         }
@@ -473,8 +472,7 @@ private fun AdvancedSettingsMenu(
             }
             Text(
                 text       = "Impostazioni avanzate",
-                fontFamily = NType82Family,
-                fontSize   = 24.sp,
+                style      = MaterialTheme.typography.displaySmall,
                 color      = NothingWhite
             )
         }
@@ -519,8 +517,7 @@ private fun LogsSettingsMenu(
             }
             Text(
                 text       = "Log di sistema",
-                fontFamily = NType82Family,
-                fontSize   = 24.sp,
+                style      = MaterialTheme.typography.displaySmall,
                 color      = NothingWhite
             )
         }
@@ -619,8 +616,7 @@ private fun PermissionsMenu(onBack: () -> Unit) {
             }
             Text(
                 text = "Gestisci autorizzazioni",
-                fontFamily = NType82Family,
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
         }
@@ -723,8 +719,7 @@ private fun OpmlSettingsMenu(
             }
             Text(
                 text       = "Gestione OPML",
-                fontFamily = NType82Family,
-                fontSize   = 24.sp,
+                style      = MaterialTheme.typography.displaySmall,
                 color      = NothingWhite
             )
         }
@@ -747,8 +742,7 @@ private fun OpmlSettingsMenu(
                 Text(
                     text = "Importazione: ${uiState.importProgress} di ${uiState.importTotal}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = NothingOnSurfaceDim,
-                    fontFamily = SpaceMonoFamily
+                    color = NothingOnSurfaceDim
                 )
             }
             HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
@@ -812,8 +806,7 @@ private fun AboutSettingsMenu(
             }
             Text(
                 text       = stringResource(R.string.header_about),
-                fontFamily = NType82Family,
-                fontSize   = 24.sp,
+                style      = MaterialTheme.typography.displaySmall,
                 color      = NothingWhite
             )
         }
@@ -1031,8 +1024,7 @@ private fun CloudSyncMenu(
             }
             Text(
                 text = "Sincronizzazione Cloud",
-                fontFamily = NType82Family,
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
         }
@@ -1123,9 +1115,7 @@ private fun SyncComparisonCard(
                     Text("LOCALE", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
                     Text(
                         text = localCount.toString(),
-                        fontSize = 32.sp,
-                        fontFamily = SpaceMonoFamily,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.displayLarge,
                         color = NothingWhite
                     )
                     Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
@@ -1146,9 +1136,7 @@ private fun SyncComparisonCard(
                     Text("CLOUD", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
                     Text(
                         text = if (lastSync != null) cloudCount.toString() else "--",
-                        fontSize = 32.sp,
-                        fontFamily = SpaceMonoFamily,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.displayLarge,
                         color = if (lastSync != null) NothingWhite else NothingOnSurfaceVariant
                     )
                     Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
@@ -1169,9 +1157,8 @@ private fun SyncComparisonCard(
                 val date = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.ITALIAN).format(java.util.Date(lastSync))
                 Text(
                     text = "Ultimo backup: $date",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = NothingOnSurfaceDim,
-                    fontFamily = SpaceMonoFamily
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NothingOnSurfaceDim
                 )
             }
         }

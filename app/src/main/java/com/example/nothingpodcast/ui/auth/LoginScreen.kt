@@ -87,10 +87,7 @@ fun LoginScreen(
                     uiState.isRegisterMode -> "Crea account"
                     else                   -> "Accedi"
                 },
-                style = MaterialTheme.typography.displayMedium.copy(
-                    fontFamily = NType82Family,
-                    fontWeight = FontWeight.Normal
-                ),
+                style = MaterialTheme.typography.displayMedium,
                 color = NothingWhite,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Start

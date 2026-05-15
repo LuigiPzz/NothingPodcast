@@ -50,7 +50,7 @@ fun PlayerScreen(
     val episode = uiState.currentEpisode
     if (episode == null) {
         Box(modifier = Modifier.fillMaxSize().background(NothingBlack), contentAlignment = Alignment.Center) {
-            Text("NESSUN EPISODIO IN RIPRODUZIONE", color = NothingWhite, fontFamily = NType82Family)
+            Text("NESSUN EPISODIO IN RIPRODUZIONE", color = NothingWhite, style = MaterialTheme.typography.titleMedium)
         }
         return
     }
@@ -425,8 +425,7 @@ private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.E
                 Text(
                     text = metaText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = NothingOnSurfaceDim,
-                    fontFamily = NType82Family
+                    color = NothingOnSurfaceDim
                 )
             }
             if (!episode.episodeType.isNullOrBlank() && episode.episodeType != "full") {
@@ -445,7 +444,6 @@ private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.E
                         text = episode.episodeType!!.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = NothingRed,
-                        fontFamily = NType82Family,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
@@ -491,8 +489,7 @@ private fun PlayerChapterBar(
         Spacer(Modifier.width(8.dp))
         Text(
             text = currentChapter?.title?.uppercase() ?: stringResource(R.string.label_chapters).uppercase(),
-            fontFamily = NType82Family,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelMedium,
             color = NothingWhite,
             letterSpacing = 1.sp,
             maxLines = 1,
@@ -552,8 +549,7 @@ private fun PlayerControls(
             DotIconSkip(direction = -1)
             Text(
                 text = "${skipBwd}s",
-                fontFamily = NType82Family,
-                fontSize = 10.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = NothingOnSurfaceDim,
                 modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
             )
@@ -587,8 +583,7 @@ private fun PlayerControls(
             DotIconSkip(direction = 1)
             Text(
                 text = "${skipFwd}s",
-                fontFamily = NType82Family,
-                fontSize = 10.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = NothingOnSurfaceDim,
                 modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
             )
@@ -814,10 +809,8 @@ private fun SpeedBar(
                 val isSelected = speed == currentSpeed
                 Text(
                     text = "${speed}x",
-                    fontFamily = NType82Family,
-                    fontSize = 11.sp,
+                    style = if (isSelected) MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelMedium,
                     color = if (isSelected) NothingWhite else NothingOnSurfaceDim,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier.clickable { 
                         onPerformClick()
                         onSpeedChange(speed) 
@@ -1295,11 +1288,8 @@ private fun AudioOutputBottomSheet(
         ) {
             Text(
                 text = "USCITA AUDIO",
-                fontFamily = NType82Family,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
                 color = NothingWhite,
-                letterSpacing = 1.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -1499,8 +1489,7 @@ private fun AudioOutputBottomSheet(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = if (isNothing) "NOTHING DEVICE" else "CMF DEVICE",
-                                            fontFamily = NType82Family,
-                                            fontSize = 9.sp,
+                                            style = MaterialTheme.typography.labelSmall,
                                             color = if (isActive) NothingRed else NothingOnSurfaceDim,
                                             letterSpacing = 1.sp
                                         )
@@ -1517,9 +1506,8 @@ private fun AudioOutputBottomSheet(
                                 }
                                 Text(
                                     text = displayName,
-                                    fontFamily = OutfitFamily,
-                                    color = if (isActive) NothingWhite else NothingOnSurface,
-                                    fontSize = 14.sp
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (isActive) NothingWhite else NothingOnSurface
                                 )
                             }
                             
@@ -1576,17 +1564,15 @@ private fun AudioOutputBottomSheet(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "NOTHING X",
-                                    fontFamily = NType82Family,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = NothingRed,
-                                    fontSize = 11.sp,
                                     letterSpacing = 2.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = "Impostazioni audio avanzate",
-                                    fontFamily = OutfitFamily,
-                                    color = NothingWhite,
-                                    fontSize = 14.sp
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = NothingWhite
                                 )
                             }
                             

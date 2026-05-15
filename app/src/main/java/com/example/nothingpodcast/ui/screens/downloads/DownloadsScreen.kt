@@ -53,8 +53,7 @@ fun DownloadsScreen(
             }
             Text(
                 text  = "Download",
-                fontFamily = NType82Family,
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
         }
