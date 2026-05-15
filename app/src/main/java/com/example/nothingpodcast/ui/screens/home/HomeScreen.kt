@@ -958,6 +958,7 @@ private fun PodcastListItem(
                 Text(
                     text = podcast.unplayedCount.toString(),
                     style = MaterialTheme.typography.labelSmall,
+                    fontSize = 11.sp,
                     fontFamily = NDot55Family,
                     color = NothingWhite
                 )
@@ -1054,6 +1055,7 @@ private fun PodcastGridItem(
                     Text(
                         text = podcast.unplayedCount.toString(),
                         style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
                         fontFamily = NDot55Family,
                         color = NothingWhite
                     )
