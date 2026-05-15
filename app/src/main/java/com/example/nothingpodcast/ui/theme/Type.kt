@@ -32,6 +32,12 @@ val NType82MonoFamily = FontFamily(
     Font(R.font.ntype82mono_regular, FontWeight.Normal)
 )
 
+// Space Mono — Alternative Monospace
+val SpaceMonoFamily = FontFamily(
+    Font(R.font.space_mono, FontWeight.Normal),
+    Font(R.font.space_mono, FontWeight.Bold)
+)
+
 // ── Nothing Typography System ────────────────────────────────────────────────
 
 val NothingTypography = Typography(
