@@ -950,7 +950,7 @@ private fun PodcastListItem(
             Box(
                 modifier         = Modifier
                     .clip(CircleShape)
-                    .background(NothingBadge)
+                    .background(NothingBlack)
                     .border(1.dp, NothingWhite, CircleShape)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
                 contentAlignment = Alignment.Center
@@ -959,7 +959,7 @@ private fun PodcastListItem(
                     text = podcast.unplayedCount.toString(),
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = NDot55Family,
-                    color = NothingOnBadge
+                    color = NothingWhite
                 )
             }
         }
@@ -1047,7 +1047,7 @@ private fun PodcastGridItem(
                         .align(Alignment.TopEnd)
                         .padding(4.dp)
                         .clip(CircleShape)
-                        .background(NothingBadge)
+                        .background(NothingBlack)
                         .border(1.dp, NothingWhite, CircleShape)
                         .padding(horizontal = 5.dp, vertical = 2.dp)
                 ) {
@@ -1055,7 +1055,7 @@ private fun PodcastGridItem(
                         text = podcast.unplayedCount.toString(),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = NDot55Family,
-                        color = NothingOnBadge
+                        color = NothingWhite
                     )
                 }
             }
