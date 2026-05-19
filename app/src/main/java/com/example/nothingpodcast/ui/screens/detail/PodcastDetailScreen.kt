@@ -475,7 +475,7 @@ private fun EpisodeListItem(
                     if (!selectionMode) expanded = true 
                 }
             )
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
         if (selectionMode) {
@@ -502,29 +502,28 @@ private fun EpisodeListItem(
                 if (metaText.isNotEmpty()) {
                     Text(
                         text = metaText,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = NothingRed,
                         modifier = Modifier.padding(end = 4.dp)
                     )
                     Text(
                         text = "•",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = NothingOnSurfaceVariant,
-                        fontSize = 10.sp,
                         modifier = Modifier.padding(end = 4.dp)
                     )
                 }
                 
                 Text(
                     text = dateStr,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = NothingOnSurfaceVariant
                 )
                 
                 if (durationStr.isNotBlank()) {
                     Text(
                         text = " • $durationStr",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = NothingOnSurfaceVariant
                     )
                 }
@@ -539,17 +538,16 @@ private fun EpisodeListItem(
                             text = episode.episodeType!!.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
                             color = NothingOnSurfaceVariant,
-                            fontSize = 8.sp,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                         )
                     }
                 }
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
 
             Text(
                 text     = episode.title,
-                style    = MaterialTheme.typography.titleMedium,
+                style    = MaterialTheme.typography.titleLarge,
                 color    = if (episode.isPlayed && !isPlaying) NothingOnSurfaceVariant else NothingWhite,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

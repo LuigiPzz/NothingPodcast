@@ -135,7 +135,8 @@ fun SettingsScreen(
                 )
             }
         },
-        containerColor = NothingBlack
+        containerColor = NothingBlack,
+        contentWindowInsets = WindowInsets(0.dp)
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when (currentMenu) {
@@ -294,25 +295,10 @@ private fun MainSettingsMenu(
             .verticalScroll(rememberScrollState())
     ) {
         // ── Header ────────────────────────────────────────────────────────
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector        = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Indietro",
-                    tint               = NothingWhite
-                )
-            }
-            Text(
-                text  = stringResource(R.string.header_settings),
-                style = MaterialTheme.typography.displaySmall,
-                color = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = stringResource(R.string.header_settings),
+            onBack = onBack
+        )
         
         // ── 1. Account e Gestione Backup ──────────────────────────────────
         SettingsSection("Account e Gestione Backup")
@@ -499,21 +485,10 @@ private fun AdvancedSettingsMenu(
             .background(NothingBlack)
             .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = NothingWhite)
-            }
-            Text(
-                text       = "Impostazioni avanzate",
-                style      = MaterialTheme.typography.displaySmall,
-                color      = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Impostazioni avanzate",
+            onBack = onBack
+        )
         
         HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
 
@@ -544,21 +519,10 @@ private fun LogsSettingsMenu(
             .background(NothingBlack)
             .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = NothingWhite)
-            }
-            Text(
-                text       = "Log di sistema",
-                style      = MaterialTheme.typography.displaySmall,
-                color      = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Log di sistema",
+            onBack = onBack
+        )
         
         Text(
             text = "LOG",
@@ -643,21 +607,10 @@ private fun PermissionsMenu(onBack: () -> Unit) {
             .background(NothingBlack)
             .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = NothingWhite)
-            }
-            Text(
-                text = "Gestisci autorizzazioni",
-                style = MaterialTheme.typography.displaySmall,
-                color = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Gestisci autorizzazioni",
+            onBack = onBack
+        )
 
         // Permesso Notifiche
         PermissionItemCard(
@@ -746,21 +699,10 @@ private fun OpmlSettingsMenu(
             .fillMaxSize()
             .background(NothingBlack)
     ) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = NothingWhite)
-            }
-            Text(
-                text       = "Gestione OPML",
-                style      = MaterialTheme.typography.displaySmall,
-                color      = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Gestione OPML",
+            onBack = onBack
+        )
         HorizontalDivider(color = NothingBorder)
 
         if (uiState.isImporting) {
@@ -833,21 +775,10 @@ private fun AboutSettingsMenu(
             .fillMaxSize()
             .background(NothingBlack)
     ) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back", tint = NothingWhite)
-            }
-            Text(
-                text       = stringResource(R.string.header_about),
-                style      = MaterialTheme.typography.displaySmall,
-                color      = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = stringResource(R.string.header_about),
+            onBack = onBack
+        )
         HorizontalDivider(color = NothingBorder)
 
         SettingsInfoRow("App", "Nothing Podcast")
@@ -1051,21 +982,10 @@ private fun CloudSyncMenu(
             .fillMaxSize()
             .background(NothingBlack)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.ArrowBack, "Indietro", tint = NothingWhite)
-            }
-            Text(
-                text = "Gestione Backup",
-                style = MaterialTheme.typography.displaySmall,
-                color = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Gestione Backup",
+            onBack = onBack
+        )
         HorizontalDivider(color = NothingBorder)
 
         Text(
@@ -1236,25 +1156,10 @@ private fun AccountSettingsMenu(
             .verticalScroll(rememberScrollState())
     ) {
         // ── Header ────────────────────────────────────────────────────────
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector        = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Indietro",
-                    tint               = NothingWhite
-                )
-            }
-            Text(
-                text  = "ACCOUNT",
-                style = MaterialTheme.typography.displaySmall,
-                color = NothingWhite
-            )
-        }
+        SettingsHeader(
+            title  = "Account",
+            onBack = onBack
+        )
 
         SettingsSection("Dettagli account")
         SettingsGroup {
@@ -1325,5 +1230,35 @@ private fun AccountSettingsMenu(
         }
 
         Spacer(Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun SettingsHeader(
+    title: String,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 12.dp)
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.offset(x = (-8).dp)
+        ) {
+            Icon(
+                imageVector        = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = "Indietro",
+                tint               = NothingWhite
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text  = title,
+            style = MaterialTheme.typography.displayMedium,
+            color = NothingWhite,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }

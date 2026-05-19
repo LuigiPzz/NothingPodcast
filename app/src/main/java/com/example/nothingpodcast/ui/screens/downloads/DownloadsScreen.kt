@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,23 +39,27 @@ fun DownloadsScreen(
             .fillMaxSize()
             .background(NothingBlack)
     ) {
-        Row(
-            modifier          = Modifier
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 12.dp)
         ) {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.offset(x = (-8).dp)
+            ) {
                 Icon(
-                    imageVector        = Icons.Outlined.ArrowBack,
+                    imageVector        = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = stringResource(R.string.action_back),
                     tint               = NothingWhite
                 )
             }
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text  = "DOWNLOAD",
-                style = MaterialTheme.typography.displaySmall,
-                color = NothingWhite
+                text  = stringResource(R.string.header_downloads),
+                style = MaterialTheme.typography.displayMedium,
+                color = NothingWhite,
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
 
