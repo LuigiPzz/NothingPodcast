@@ -61,7 +61,8 @@ fun NothingNavGraph(
 
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onResetOnboarding = onResetOnboarding
             )
         }
 

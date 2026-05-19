@@ -110,16 +110,24 @@ class PodcastPlaybackService : MediaLibraryService() {
                 browser: MediaSession.ControllerInfo,
                 mediaId: String
             ): ListenableFuture<LibraryResult<MediaItem>> {
+                com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onGetItem for mediaId: $mediaId")
                 return serviceScope.future {
-                    val episode = episodeRepository.getEpisodeById(mediaId)
-                    if (episode != null) {
-                        LibraryResult.ofItem(episode.toMediaItem(), null)
-                    } else {
-                        val podcast = podcastRepository.getPodcastById(mediaId)
-                        if (podcast != null) {
-                            LibraryResult.ofItem(podcast.toMediaItem(), null)
-                        } else {
-                            LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
+                    when (mediaId) {
+                        ROOT_ID -> LibraryResult.ofItem(getRootItem(), null)
+                        ID_SUBSCRIPTIONS -> LibraryResult.ofItem(getSubscriptionsCategory(), null)
+                        ID_DOWNLOADS -> LibraryResult.ofItem(getDownloadsCategory(), null)
+                        else -> {
+                            val episode = episodeRepository.getEpisodeById(mediaId)
+                            if (episode != null) {
+                                LibraryResult.ofItem(episode.toMediaItem(), null)
+                            } else {
+                                val podcast = podcastRepository.getPodcastById(mediaId)
+                                if (podcast != null) {
+                                    LibraryResult.ofItem(podcast.toMediaItem(), null)
+                                } else {
+                                    LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
+                                }
+                            }
                         }
                     }
                 }
@@ -242,15 +250,39 @@ class PodcastPlaybackService : MediaLibraryService() {
     private fun updateWidget() {
         if (!::player.isInitialized) return
         
-        val podcastTitle = player.mediaMetadata.artist?.toString() ?: "Nothing"
-        val episodeTitle = player.mediaMetadata.title?.toString() ?: "Nessun episodio"
-        val isPlaying = player.isPlaying
-        val currentPos = formatDuration(player.currentPosition)
-        val duration = if (player.duration > 0) formatDuration(player.duration) else "00:00"
-
         serviceScope.launch {
             try {
                 val context = this@PodcastPlaybackService
+                
+                var podcastTitle = "Nothing"
+                var episodeTitle = "Nessun episodio"
+                var isPlaying = false
+                var currentPos = "00:00"
+                var duration = "00:00"
+                var progressFrac = 0f
+                var durationMs = 1L
+
+                if (player.mediaItemCount > 0) {
+                    podcastTitle = player.mediaMetadata.artist?.toString() ?: "Nothing"
+                    episodeTitle = player.mediaMetadata.title?.toString() ?: "Nessun episodio"
+                    isPlaying = player.isPlaying
+                    currentPos = formatDuration(player.currentPosition)
+                    duration = if (player.duration > 0) formatDuration(player.duration) else "00:00"
+                    durationMs = player.duration.coerceAtLeast(1L)
+                    progressFrac = if (durationMs > 0) (player.currentPosition.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+                } else {
+                    val lastEpisode = episodeRepository.getLastPlayedEpisode()
+                    if (lastEpisode != null) {
+                        podcastTitle = lastEpisode.podcastTitle
+                        episodeTitle = lastEpisode.title
+                        isPlaying = false
+                        currentPos = formatDuration(lastEpisode.playbackPosition * 1000L)
+                        duration = if (lastEpisode.duration > 0) formatDuration(lastEpisode.duration * 1000L) else "00:00"
+                        durationMs = (lastEpisode.duration * 1000L).coerceAtLeast(1L)
+                        progressFrac = if (lastEpisode.duration > 0) (lastEpisode.playbackPosition.toFloat() / lastEpisode.duration).coerceIn(0f, 1f) else 0f
+                    }
+                }
+
                 val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
                 val glanceIds = manager.getGlanceIds(com.example.nothingpodcast.ui.widget.NothingPodcastWidget::class.java)
                 
@@ -278,10 +310,7 @@ class PodcastPlaybackService : MediaLibraryService() {
                 
                 if (appWidgetIds.isNotEmpty()) {
                     val views = android.widget.RemoteViews(context.packageName, R.layout.very_simple_layout)
-                    
-                    val durationMs = player.duration.coerceAtLeast(1L)
                     val timeDisplay = "$currentPos / $duration"
-
                     val isEmpty = episodeTitle == "Nessun episodio" || episodeTitle.isBlank()
                     
                     if (isEmpty) {
@@ -297,7 +326,6 @@ class PodcastPlaybackService : MediaLibraryService() {
                         }
                         
                         // Generate dotted progress bitmap
-                        val progressFrac = if (durationMs > 0) (player.currentPosition.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
                         val dottedBitmap = createDottedProgressBitmap(context, progressFrac)
                         views.setImageViewBitmap(R.id.simple_progress_image, dottedBitmap)
 
@@ -336,6 +364,7 @@ class PodcastPlaybackService : MediaLibraryService() {
             }
         }
     }
+
 
     private fun createTitleBitmap(context: android.content.Context, title: String): android.graphics.Bitmap? {
         return try {

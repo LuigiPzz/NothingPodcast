@@ -90,12 +90,30 @@ class PlayerViewModel @Inject constructor(
                 controller = controllerFuture?.get()
                 controller?.addListener(playerListener)
                 com.example.nothingpodcast.util.AppLogger.log(context, "INFO", "MediaController connected.")
+                
+                // RESTORE STATE ON COLD START
+                val currentMediaItem = controller?.currentMediaItem
+                if (currentMediaItem != null) {
+                    val mediaId = currentMediaItem.mediaId
+                    viewModelScope.launch {
+                        val episode = episodeRepository.getEpisodeById(mediaId)
+                        val podcast = episode?.let { podcastRepository.getPodcastById(it.podcastId) }
+                        _uiState.value = _uiState.value.copy(
+                            currentEpisode = episode,
+                            currentPodcast = podcast
+                        )
+                    }
+                } else {
+                    loadLastEpisodeIfEmpty()
+                }
+
                 startPositionPolling()
             } catch (e: Exception) {
                 com.example.nothingpodcast.util.AppLogger.log(context, "ERROR", "Failed to connect to MediaController: ${e.message}")
             }
         }, MoreExecutors.directExecutor())
     }
+
 
     // ── Playback commands ─────────────────────────────────────────────────
 

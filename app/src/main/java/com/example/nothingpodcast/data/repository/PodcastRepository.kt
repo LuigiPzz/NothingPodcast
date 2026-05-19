@@ -12,15 +12,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import android.content.Context
+import com.example.nothingpodcast.data.local.datastore.UserPreferencesDataStore
+import com.example.nothingpodcast.util.WorkScheduler
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class PodcastRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
     private val itunesApi: ItunesApiService,
-    private val rssFeedParser: RssFeedParser
+    private val rssFeedParser: RssFeedParser,
+    private val preferencesDataStore: UserPreferencesDataStore
 ) {
     // ── Local subscriptions ───────────────────────────────────────────────
 
@@ -102,8 +108,25 @@ class PodcastRepository @Inject constructor(
             podcastTitle  = podcast.title,
             podcastImageUrl = podcast.imageUrl
         )
-        val newCount = episodeDao.upsertEpisodes(episodes)
+        val newEpisodes = episodeDao.upsertEpisodes(episodes)
         podcastDao.updateLastRefreshed(podcast.id, System.currentTimeMillis())
+        
+        val newCount = newEpisodes.size
+
+        if (newCount > 0) {
+            val autoDownload = preferencesDataStore.autoDownloadEnabled.first()
+            if (autoDownload) {
+                val wifiOnly = preferencesDataStore.autoDownloadWifiOnly.first()
+                newEpisodes.forEach { newEpisode ->
+                    WorkScheduler.enqueueDownload(
+                        context = context,
+                        episodeId = newEpisode.id,
+                        audioUrl = newEpisode.audioUrl,
+                        wifiOnly = wifiOnly
+                    )
+                }
+            }
+        }
         
         val latestTitle = if (newCount > 0) episodes.maxByOrNull { it.publishDate }?.title else null
         return Pair(newCount, latestTitle)

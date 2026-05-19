@@ -30,8 +30,8 @@ interface EpisodeDao {
     suspend fun insertEpisodesIgnoreExisting(episodes: List<EpisodeEntity>)
 
     @Transaction
-    suspend fun upsertEpisodes(episodes: List<EpisodeEntity>): Int {
-        var newCount = 0
+    suspend fun upsertEpisodes(episodes: List<EpisodeEntity>): List<EpisodeEntity> {
+        val newEpisodes = mutableListOf<EpisodeEntity>()
         episodes.forEach { episode ->
             val existing = getEpisodeById(episode.id)
             if (existing != null) {
@@ -45,10 +45,10 @@ interface EpisodeDao {
                 )
             } else {
                 insertEpisodes(listOf(episode))
-                newCount++
+                newEpisodes.add(episode)
             }
         }
-        return newCount
+        return newEpisodes
     }
 
     @Query("UPDATE episodes SET title = :title, description = :description, duration = :duration, imageUrl = :imageUrl, chaptersJson = :chaptersJson WHERE id = :id")

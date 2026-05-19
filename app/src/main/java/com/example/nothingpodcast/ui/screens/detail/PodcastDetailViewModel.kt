@@ -31,6 +31,7 @@ data class DetailUiState(
     val showFilterSheet: Boolean = false,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
+    val searchQuery: String = "",
     val error: String? = null
 ) {
     val filteredEpisodes: List<Episode>
@@ -41,6 +42,10 @@ data class DetailUiState(
                     EpisodeFilter.PLAYED -> ep.isPlayed
                     EpisodeFilter.UNPLAYED -> !ep.isPlayed
                 }
+            }
+            .filter { ep ->
+                searchQuery.length < 3 ||
+                        ep.title.contains(searchQuery, ignoreCase = true)
             }
             .sortedWith { a, b ->
                 when (sortType) {
@@ -67,6 +72,7 @@ class PodcastDetailViewModel @Inject constructor(
     private val _showFilterSheet = MutableStateFlow(false)
     private val _isLoading = MutableStateFlow(true)
     private val _isRefreshing = MutableStateFlow(false)
+    private val _searchQuery = MutableStateFlow("")
     private val _error = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<DetailUiState> = combine(
@@ -78,6 +84,7 @@ class PodcastDetailViewModel @Inject constructor(
         _showFilterSheet,
         _isLoading,
         _isRefreshing,
+        _searchQuery,
         _error
     ) { args ->
         @Suppress("UNCHECKED_CAST")
@@ -90,7 +97,8 @@ class PodcastDetailViewModel @Inject constructor(
             showFilterSheet = args[5] as Boolean,
             isLoading = args[6] as Boolean,
             isRefreshing = args[7] as Boolean,
-            error = args[8] as String?
+            searchQuery = args[8] as String,
+            error = args[9] as String?
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
 
@@ -219,6 +227,10 @@ class PodcastDetailViewModel @Inject constructor(
 
     fun setSort(sort: EpisodeSort) {
         viewModelScope.launch { preferences.setEpisodeSort(sort.name) }
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     fun dismissError() {

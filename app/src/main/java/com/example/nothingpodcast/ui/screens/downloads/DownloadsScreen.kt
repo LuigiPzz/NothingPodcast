@@ -52,7 +52,7 @@ fun DownloadsScreen(
                 )
             }
             Text(
-                text  = "Download",
+                text  = "DOWNLOAD",
                 style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
@@ -70,9 +70,9 @@ fun DownloadsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    stringResource(R.string.label_no_downloads_empty),
-                    style     = MaterialTheme.typography.labelLarge,
-                    color     = NothingOnSurfaceDim,
+                    text      = stringResource(R.string.label_no_downloads_empty),
+                    style     = MaterialTheme.typography.bodyMedium,
+                    color     = NothingOnSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
@@ -192,7 +192,7 @@ private fun DownloadedEpisodeItem(
                     if (!selectionMode) onEnterSelectionMode()
                 }
             )
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (selectionMode) {
@@ -204,43 +204,47 @@ private fun DownloadedEpisodeItem(
                     checkmarkColor = NothingBlack,
                     uncheckedColor = NothingBorder
                 ),
-                modifier = Modifier.padding(end = 8.dp)
+                modifier = Modifier.padding(end = 12.dp)
             )
         }
         AsyncImage(
             model              = episode.imageUrl,
             contentDescription = null,
             contentScale       = ContentScale.Crop,
-            modifier           = Modifier.size(48.dp).border(1.dp, NothingWhite)
+            modifier           = Modifier
+                .size(64.dp)
+                .border(1.dp, NothingBorderDim)
         )
 
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                episode.podcastTitle,
+                text     = episode.podcastTitle,
                 style    = MaterialTheme.typography.labelMedium,
-                color    = NothingOnSurfaceVariant,
+                color    = NothingRed,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.height(4.dp))
             Text(
-                episode.title,
-                style    = MaterialTheme.typography.titleSmall,
+                text     = episode.title,
+                style    = MaterialTheme.typography.titleMedium,
                 color    = NothingWhite,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.height(6.dp))
             Text(
-                listOfNotNull(durationStr.takeIf { it.isNotBlank() }, sizeStr.takeIf { it.isNotBlank() })
+                text     = listOfNotNull(durationStr.takeIf { it.isNotBlank() }, sizeStr.takeIf { it.isNotBlank() })
                     .joinToString(" · "),
-                style = MaterialTheme.typography.labelSmall,
-                color = NothingOnSurfaceDim
+                style    = MaterialTheme.typography.labelMedium,
+                color    = NothingOnSurfaceDim
             )
 
             // Progress Bar for started episodes
             if (episode.playbackPosition > 0 && !episode.isPlayed) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 val progress = if (episode.duration > 0) (episode.playbackPosition.toFloat() / episode.duration).coerceIn(0f, 1f) else 0f
                 Box(
                     modifier = Modifier
@@ -259,8 +263,16 @@ private fun DownloadedEpisodeItem(
         }
 
         if (!selectionMode) {
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Outlined.DeleteOutline, "Delete", tint = NothingOnSurfaceDim, modifier = Modifier.size(20.dp))
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.DeleteOutline, 
+                    contentDescription = "Delete", 
+                    tint = NothingOnSurfaceDim, 
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }

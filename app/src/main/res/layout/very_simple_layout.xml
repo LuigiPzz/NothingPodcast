@@ -34,8 +34,9 @@
         <ImageView
             android:id="@+id/simple_progress_image"
             android:layout_width="match_parent"
-            android:layout_height="12dp"
-            android:layout_marginTop="14dp"
+            android:layout_height="28dp"
+            android:layout_marginTop="6dp"
+            android:paddingVertical="8dp"
             android:scaleType="fitCenter" />
 
         <!-- Times (Left/Right) -->

@@ -31,6 +31,7 @@ import com.example.nothingpodcast.ui.player.PlayerUiState
 import com.example.nothingpodcast.ui.theme.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import java.util.concurrent.TimeUnit
@@ -425,7 +426,7 @@ private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.E
                 Text(
                     text = metaText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = NothingOnSurfaceDim
+                    color = NothingRed
                 )
             }
             if (!episode.episodeType.isNullOrBlank() && episode.episodeType != "full") {
@@ -433,7 +434,7 @@ private fun PlayerEpisodeInfo(episode: com.example.nothingpodcast.domain.model.E
                     Text(
                         text = " • ",
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim
+                        color = NothingOnSurfaceVariant
                     )
                 }
                 Surface(
@@ -457,8 +458,6 @@ private fun PlayerTitle(title: String, textAlign: TextAlign = TextAlign.Center) 
     Text(
         text      = title,
         style     = MaterialTheme.typography.titleLarge,
-        fontFamily = SpaceMonoFamily,
-        fontSize  = 16.sp,
         color     = NothingWhite,
         textAlign = textAlign,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
@@ -506,19 +505,39 @@ private fun PlayerProgressBar(
     durationMs: Long,
     onSeek: (Long) -> Unit
 ) {
+    var dragProgress by remember { mutableStateOf<Float?>(null) }
+    
+    val currentProgress = if (dragProgress != null) {
+        dragProgress!!
+    } else {
+        if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    }
+    
+    val displayPositionMs = if (dragProgress != null) {
+        (dragProgress!! * durationMs).toLong()
+    } else {
+        positionMs
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(modifier = Modifier.padding(horizontal = 0.dp)) {
             DottedProgressBar(
-                progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f,
-                onSeek   = { frac -> onSeek((frac * durationMs).toLong()) }
+                progress = currentProgress,
+                onDragProgress = { frac ->
+                    dragProgress = frac
+                },
+                onDragFinished = { frac ->
+                    dragProgress = null
+                    onSeek((frac * durationMs).toLong())
+                }
             )
         }
         Row(
             modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(formatMs(positionMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
-            Text(formatMs(durationMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
+            Text(formatMs(displayPositionMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
+            Text(formatMs(durationMs), style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
         }
     }
 }
@@ -552,7 +571,7 @@ private fun PlayerControls(
             Text(
                 text = "${skipBwd}s",
                 style = MaterialTheme.typography.labelSmall,
-                color = NothingOnSurfaceDim,
+                color = NothingOnSurfaceVariant,
                 modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
             )
         }
@@ -586,7 +605,7 @@ private fun PlayerControls(
             Text(
                 text = "${skipFwd}s",
                 style = MaterialTheme.typography.labelSmall,
-                color = NothingOnSurfaceDim,
+                color = NothingOnSurfaceVariant,
                 modifier = Modifier.align(Alignment.Center).padding(top = 36.dp)
             )
         }
@@ -678,16 +697,40 @@ private fun UtilityButton(
 @Composable
 private fun DottedProgressBar(
     progress: Float,
-    onSeek: (Float) -> Unit
+    onDragProgress: (Float) -> Unit,
+    onDragFinished: (Float) -> Unit
 ) {
     val dotCount = 55
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(24.dp)
+            .height(36.dp)
             .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    onSeek((offset.x / size.width).coerceIn(0f, 1f))
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val width = size.width
+                        if (width > 0) {
+                            val initialProgress = (down.position.x / width).coerceIn(0f, 1f)
+                            onDragProgress(initialProgress)
+                        }
+                        val pointerId = down.id
+                        var lastProgress = if (width > 0) (down.position.x / width).coerceIn(0f, 1f) else progress
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == pointerId }
+                            if (change == null || !change.pressed) {
+                                onDragFinished(lastProgress)
+                                break
+                            }
+                            change.consume()
+                            val curWidth = size.width
+                            if (curWidth > 0) {
+                                lastProgress = (change.position.x / curWidth).coerceIn(0f, 1f)
+                                onDragProgress(lastProgress)
+                            }
+                        }
+                    }
                 }
             }
     ) {

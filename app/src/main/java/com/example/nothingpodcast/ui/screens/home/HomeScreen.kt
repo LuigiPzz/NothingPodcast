@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -116,8 +117,6 @@ fun HomeScreen(
                 )
                 ProfileMenu(
                     userEmail             = userEmail,
-                    onSignOut             = { authViewModel.signOut() },
-                    onResetOnboarding     = onResetOnboarding,
                     onNavigateToDownloads = onNavigateToDownloads,
                     onNavigateToSettings  = onNavigateToSettings
                 )
@@ -132,32 +131,11 @@ fun HomeScreen(
             ) {
                 Text(
                     text     = stringResource(R.string.label_subscriptions),
-                    style    = MaterialTheme.typography.headlineSmall,
+                    style    = MaterialTheme.typography.headlineMedium,
                     color    = NothingWhite,
                     modifier = Modifier.weight(1f)
                 )
-                // Refresh (only if not editing)
-                if (!uiState.isEditMode) {
-                    IconButton(
-                        onClick = viewModel::refreshAll,
-                        enabled = !uiState.isRefreshing
-                    ) {
-                        if (uiState.isRefreshing) {
-                            CircularProgressIndicator(
-                                color       = NothingOnSurfaceVariant,
-                                modifier    = Modifier.size(16.dp),
-                                strokeWidth = 1.5.dp
-                            )
-                        } else {
-                            Icon(
-                                Icons.Outlined.Refresh,
-                                contentDescription = "Refresh",
-                                tint               = NothingOnSurfaceVariant,
-                                modifier           = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
+
 
                 if (uiState.isEditMode) {
                     TextButton(onClick = viewModel::saveOrder) {
@@ -175,135 +153,157 @@ fun HomeScreen(
 
             HorizontalDivider(color = NothingBorder, thickness = 0.5.dp)
 
-            // ── Podcast list / grid ───────────────────────────────────────
-            when {
-                uiState.subscribedPodcasts.isEmpty() -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 96.dp)
-                    ) {
-                        item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 32.dp)
-                            ) {
-                                Text(
-                                    text = "Inizia la tua esperienza",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = NothingWhite
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = "Scopri alcuni dei podcast più amati dalla community o cercali cliccando il tasto +",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = NothingOnSurfaceDim
-                                )
-                            }
-                        }
-                        
-                        item {
-                            Text(
-                                text = "SCELTI PER TE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = NothingOnSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                                letterSpacing = 2.sp
-                            )
-                        }
-                        
-                        if (uiState.suggestedPodcasts.isEmpty()) {
+            // ── Podcast list / grid with Pull to Refresh ───────────────────
+            val pullState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refreshAll,
+                state = pullState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullState,
+                        isRefreshing = uiState.isRefreshing,
+                        containerColor = NothingSurfaceHigh,
+                        color = NothingWhite,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+                }
+            ) {
+                when {
+                    uiState.subscribedPodcasts.isEmpty() -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 96.dp)
+                        ) {
                             item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                                    contentAlignment = Alignment.Center
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 20.dp, vertical = 32.dp)
                                 ) {
-                                    CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.dp)
+                                    Text(
+                                        text = "Inizia la tua esperienza",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = NothingWhite
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = "Scopri alcuni dei podcast più amati dalla community o cercali cliccando il tasto +",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = NothingOnSurfaceDim
+                                    )
                                 }
                             }
-                        } else {
-                            items(uiState.suggestedPodcasts) { podcast ->
-                                SearchResultItem(
-                                    podcast = podcast,
-                                    isSubscribed = false,
-                                    onSubscribe = { viewModel.subscribeToPodcast(podcast) },
-                                    onClick = { onPodcastClick(podcast.id) }
+                            
+                            item {
+                                Text(
+                                    text = "SCELTI PER TE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = NothingOnSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                                    letterSpacing = 2.sp
+                                )
+                            }
+                            
+                            if (uiState.suggestedPodcasts.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.dp)
+                                    }
+                                }
+                            } else {
+                                items(uiState.suggestedPodcasts) { podcast ->
+                                    SearchResultItem(
+                                        podcast = podcast,
+                                        isSubscribed = false,
+                                        onSubscribe = { viewModel.subscribeToPodcast(podcast) },
+                                        onClick = { onPodcastClick(podcast.id) }
+                                    )
+                                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
+                                }
+                            }
+                        }
+                    }
+                    uiState.viewMode == PodcastViewMode.LIST -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 96.dp)
+                        ) {
+                            itemsIndexed(uiState.subscribedPodcasts, key = { _, p -> p.id }) { index, podcast ->
+                                PodcastListItem(
+                                    podcast     = podcast,
+                                    rotation    = currentRotation,
+                                    isEditMode  = uiState.isEditMode,
+                                    onClick     = { onPodcastClick(podcast.id) },
+                                    onLongClick = { viewModel.setEditMode(true) },
+                                    onMove      = { offset ->
+                                        val threshold = 100f
+                                        val currentIndex = uiState.subscribedPodcasts.indexOf(podcast)
+                                        if (currentIndex != -1) {
+                                            if (offset > threshold && currentIndex < uiState.subscribedPodcasts.size - 1) {
+                                                viewModel.movePodcast(currentIndex, currentIndex + 1)
+                                                true
+                                            } else if (offset < -threshold && currentIndex > 0) {
+                                                viewModel.movePodcast(currentIndex, currentIndex - 1)
+                                                true
+                                            } else false
+                                        } else false
+                                    }
                                 )
                                 HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
                             }
                         }
                     }
-                }
-                uiState.viewMode == PodcastViewMode.LIST -> {
-                    LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
-                        itemsIndexed(uiState.subscribedPodcasts, key = { _, p -> p.id }) { index, podcast ->
-                            PodcastListItem(
-                                podcast     = podcast,
-                                rotation    = currentRotation,
-                                isEditMode  = uiState.isEditMode,
-                                onClick     = { onPodcastClick(podcast.id) },
-                                onLongClick = { viewModel.setEditMode(true) },
-                                onMove      = { offset ->
-                                    val threshold = 100f
-                                    val currentIndex = uiState.subscribedPodcasts.indexOf(podcast)
-                                    if (currentIndex != -1) {
-                                        if (offset > threshold && currentIndex < uiState.subscribedPodcasts.size - 1) {
-                                            viewModel.movePodcast(currentIndex, currentIndex + 1)
-                                            true
-                                        } else if (offset < -threshold && currentIndex > 0) {
-                                            viewModel.movePodcast(currentIndex, currentIndex - 1)
-                                            true
+                    else -> {
+                        LazyVerticalGrid(
+                            columns               = GridCells.Fixed(uiState.viewMode.columns),
+                            contentPadding        = PaddingValues(12.dp, 12.dp, 12.dp, 96.dp),
+                            verticalArrangement   = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier              = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(uiState.subscribedPodcasts, key = { _, p -> p.id }) { index, podcast ->
+                                val columns = uiState.viewMode.columns
+                                PodcastGridItem(
+                                    podcast     = podcast,
+                                    showLabel   = uiState.showGridLabels,
+                                    rotation    = currentRotation,
+                                    isEditMode  = uiState.isEditMode,
+                                    onClick     = { onPodcastClick(podcast.id) },
+                                    onLongClick = { viewModel.setEditMode(true) },
+                                    onMove      = { dx, dy ->
+                                        val threshold = 120f
+                                        val currentIndex = uiState.subscribedPodcasts.indexOf(podcast)
+                                        if (currentIndex != -1) {
+                                            when {
+                                                dx > threshold && currentIndex % columns < columns - 1 -> {
+                                                    viewModel.movePodcast(currentIndex, currentIndex + 1)
+                                                    true
+                                                }
+                                                dx < -threshold && currentIndex % columns > 0 -> {
+                                                    viewModel.movePodcast(currentIndex, currentIndex - 1)
+                                                    true
+                                                }
+                                                dy > threshold && currentIndex + columns < uiState.subscribedPodcasts.size -> {
+                                                    viewModel.movePodcast(currentIndex, currentIndex + columns)
+                                                    true
+                                                }
+                                                dy < -threshold && currentIndex - columns >= 0 -> {
+                                                    viewModel.movePodcast(currentIndex, currentIndex - columns)
+                                                    true
+                                                }
+                                                else -> false
+                                            }
                                         } else false
-                                    } else false
-                                }
-                            )
-                            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns               = GridCells.Fixed(uiState.viewMode.columns),
-                        contentPadding        = PaddingValues(12.dp, 12.dp, 12.dp, 96.dp),
-                        verticalArrangement   = Arrangement.spacedBy(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier              = Modifier.fillMaxSize()
-                    ) {
-                        itemsIndexed(uiState.subscribedPodcasts, key = { _, p -> p.id }) { index, podcast ->
-                            val columns = uiState.viewMode.columns
-                            PodcastGridItem(
-                                podcast     = podcast,
-                                showLabel   = uiState.showGridLabels,
-                                rotation    = currentRotation,
-                                isEditMode  = uiState.isEditMode,
-                                onClick     = { onPodcastClick(podcast.id) },
-                                onLongClick = { viewModel.setEditMode(true) },
-                                onMove      = { dx, dy ->
-                                    val threshold = 120f
-                                    val currentIndex = uiState.subscribedPodcasts.indexOf(podcast)
-                                    if (currentIndex != -1) {
-                                        when {
-                                            dx > threshold && currentIndex % columns < columns - 1 -> {
-                                                viewModel.movePodcast(currentIndex, currentIndex + 1)
-                                                true
-                                            }
-                                            dx < -threshold && currentIndex % columns > 0 -> {
-                                                viewModel.movePodcast(currentIndex, currentIndex - 1)
-                                                true
-                                            }
-                                            dy > threshold && currentIndex + columns < uiState.subscribedPodcasts.size -> {
-                                                viewModel.movePodcast(currentIndex, currentIndex + columns)
-                                                true
-                                            }
-                                            dy < -threshold && currentIndex - columns >= 0 -> {
-                                                viewModel.movePodcast(currentIndex, currentIndex - columns)
-                                                true
-                                            }
-                                            else -> false
-                                        }
-                                    } else false
-                                }
-                            )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -350,8 +350,6 @@ fun HomeScreen(
 @Composable
 private fun ProfileMenu(
     userEmail:             String?,
-    onSignOut:             () -> Unit,
-    onResetOnboarding:     () -> Unit,
     onNavigateToDownloads: () -> Unit,
     onNavigateToSettings:  () -> Unit
 ) {
@@ -390,7 +388,7 @@ private fun ProfileMenu(
                     Text(
                         text = stringResource(R.string.label_account),
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim
+                        color = NothingOnSurfaceVariant
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
@@ -399,23 +397,6 @@ private fun ProfileMenu(
                         color = NothingWhite
                     )
                 }
-                
-                HorizontalDivider(color = NothingBorderDim, modifier = Modifier.padding(vertical = 4.dp))
-                
-                DropdownMenuItem(
-                    text = { 
-                        Text(
-                            text = "Esci",
-                            style = MaterialTheme.typography.bodyMedium
-                        ) 
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(20.dp)) },
-                    onClick = {
-                        expanded = false
-                        onSignOut()
-                    },
-                    colors = MenuDefaults.itemColors(textColor = NothingWhite, leadingIconColor = NothingOnSurfaceDim)
-                )
             } else {
                 // Guest mode
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -428,26 +409,9 @@ private fun ProfileMenu(
                     Text(
                         text = "Non loggato",
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim
+                        color = NothingOnSurfaceVariant
                     )
                 }
-                
-                HorizontalDivider(color = NothingBorderDim, modifier = Modifier.padding(vertical = 4.dp))
-                
-                DropdownMenuItem(
-                    text = { 
-                        Text(
-                            text = "Registrati o Accedi",
-                            style = MaterialTheme.typography.bodyMedium
-                        ) 
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.PersonAdd, null, modifier = Modifier.size(20.dp)) },
-                    onClick = {
-                        expanded = false
-                        onResetOnboarding()
-                    },
-                    colors = MenuDefaults.itemColors(textColor = NothingWhite, leadingIconColor = NothingOnSurfaceDim)
-                )
             }
 
             HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
@@ -586,6 +550,149 @@ private fun DottedLetter(
 
 // ── View mode dropdown ────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ViewModeBottomSheet(
+    currentMode:        PodcastViewMode,
+    showGridLabels:     Boolean,
+    onViewModeChange:   (PodcastViewMode) -> Unit,
+    onToggleGridLabels: () -> Unit,
+    onDismiss:          () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState       = sheetState,
+        containerColor   = NothingSurfaceHigh,
+        shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+        ) {
+            // Header Visualizzazione
+            Text(
+                text     = stringResource(R.string.header_view_mode).uppercase(),
+                style    = MaterialTheme.typography.titleMedium,
+                color    = NothingWhite,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Layout options (horizontal segment buttons)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(NothingBlack),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PodcastViewMode.entries.forEachIndexed { index, mode ->
+                    val isSelected = mode == currentMode
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(if (isSelected) NothingWhite else NothingBlack)
+                            .clickable { 
+                                onViewModeChange(mode) 
+                            }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = when(mode) {
+                                PodcastViewMode.LIST -> "LISTA"
+                                PodcastViewMode.GRID2 -> "2×"
+                                PodcastViewMode.GRID3 -> "3×"
+                                PodcastViewMode.GRID4 -> "4×"
+                                PodcastViewMode.GRID5 -> "5×"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isSelected) NothingBlack else NothingWhite,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                    if (index < PodcastViewMode.entries.size - 1) {
+                        Spacer(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(28.dp)
+                                .background(NothingBorderDim)
+                        )
+                    }
+                }
+            }
+
+            if (currentMode != PodcastViewMode.LIST) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text     = "TITOLI PODCAST",
+                    style    = MaterialTheme.typography.titleMedium,
+                    color    = NothingWhite,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Toggle labels (Grid names option)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NothingBlack),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // NOMI SI
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(if (showGridLabels) NothingWhite else NothingBlack)
+                            .clickable { if (!showGridLabels) onToggleGridLabels() }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "MOSTRA",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (showGridLabels) NothingBlack else NothingWhite,
+                            fontWeight = if (showGridLabels) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+
+                    Spacer(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(28.dp)
+                            .background(NothingBorderDim)
+                    )
+
+                    // NOMI NO
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(if (!showGridLabels) NothingWhite else NothingBlack)
+                            .clickable { if (showGridLabels) onToggleGridLabels() }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "NASCONDI",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (!showGridLabels) NothingBlack else NothingWhite,
+                            fontWeight = if (!showGridLabels) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun ViewModeMenu(
     currentMode:        PodcastViewMode,
@@ -593,76 +700,21 @@ private fun ViewModeMenu(
     onViewModeChange:   (PodcastViewMode) -> Unit,
     onToggleGridLabels: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(false) }
 
     Box {
-        IconButton(onClick = { expanded = true }) {
+        IconButton(onClick = { showSheet = true }) {
             Icon(Icons.Outlined.GridView, "Opzioni vista", tint = NothingOnSurfaceVariant)
         }
 
-        DropdownMenu(
-            expanded         = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor   = NothingSurfaceHigh
-        ) {
-            Text(
-                text     = stringResource(R.string.header_view_mode),
-                style    = MaterialTheme.typography.labelSmall,
-                color    = NothingOnSurfaceDim,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+        if (showSheet) {
+            ViewModeBottomSheet(
+                currentMode        = currentMode,
+                showGridLabels     = showGridLabels,
+                onViewModeChange   = onViewModeChange,
+                onToggleGridLabels = onToggleGridLabels,
+                onDismiss          = { showSheet = false }
             )
-
-            PodcastViewMode.entries.forEach { mode ->
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = mode == currentMode,
-                                onClick  = null,
-                                colors   = RadioButtonDefaults.colors(
-                                    selectedColor   = NothingWhite,
-                                    unselectedColor = NothingOnSurfaceDim
-                                )
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text  = mode.label,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (mode == currentMode) NothingWhite else NothingOnSurfaceVariant
-                            )
-                        }
-                    },
-                    onClick = { onViewModeChange(mode); expanded = false }
-                )
-            }
-
-            if (currentMode != PodcastViewMode.LIST) {
-                HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
-                Text(
-                    text     = stringResource(R.string.header_grid_options),
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = NothingOnSurfaceDim,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                )
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked         = showGridLabels,
-                                onCheckedChange = null,
-                                colors          = CheckboxDefaults.colors(
-                                    checkedColor   = NothingWhite,
-                                    checkmarkColor = NothingBlack,
-                                    uncheckedColor = NothingOnSurfaceDim
-                                )
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.label_show_name), style = MaterialTheme.typography.labelMedium, color = NothingWhite)
-                        }
-                    },
-                    onClick = { onToggleGridLabels() }
-                )
-            }
         }
     }
 }
@@ -682,6 +734,14 @@ private fun SearchBottomSheet(
     val sheetState     = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val focusRequester = remember { FocusRequester() }
     val focusManager   = LocalFocusManager.current
+
+    val checkSubscribed = remember(subscribedIds, uiState.subscribedPodcasts) {
+        { podcast: Podcast ->
+            podcast.id in subscribedIds || uiState.subscribedPodcasts.any { 
+                it.feedUrl.lowercase().trim() == podcast.feedUrl.lowercase().trim() 
+            }
+        }
+    }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -746,11 +806,71 @@ private fun SearchBottomSheet(
                     CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.5.dp, modifier = Modifier.size(32.dp))
                 }
 
-                uiState.searchQuery.isBlank() -> Box(
-                    modifier         = Modifier.fillMaxWidth().height(140.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Digita per cercare podcast", style = MaterialTheme.typography.bodyMedium, color = NothingOnSurfaceDim, textAlign = TextAlign.Center)
+                uiState.searchQuery.isBlank() -> {
+                    val listToShow = if (uiState.subscribedPodcasts.isNotEmpty()) {
+                        uiState.recommendedPodcasts
+                    } else {
+                        uiState.suggestedPodcasts
+                    }
+                    val headerText = if (uiState.subscribedPodcasts.isNotEmpty()) {
+                        "CONSIGLIATI PER TE"
+                    } else {
+                        "SCELTI PER TE"
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = headerText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = NothingOnSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 12.dp),
+                            letterSpacing = 2.sp
+                        )
+                        
+                        if (uiState.isLoadingRecommendations && listToShow.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(140.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = NothingWhite, strokeWidth = 1.dp, modifier = Modifier.size(24.dp))
+                            }
+                        } else if (listToShow.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Nessun consiglio disponibile", style = MaterialTheme.typography.bodyMedium, color = NothingOnSurfaceDim)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 350.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(listToShow, key = { it.id }) { podcast ->
+                                    val isSubscribed = checkSubscribed(podcast)
+                                    SearchResultItem(
+                                        podcast = podcast,
+                                        isSubscribed = isSubscribed,
+                                        onSubscribe = { onSubscribe(podcast) },
+                                        onClick = {
+                                            if (isSubscribed) {
+                                                onPodcastClick(podcast.id)
+                                            } else {
+                                                previewPodcast = podcast
+                                            }
+                                        }
+                                    )
+                                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
+                                }
+                            }
+                        }
+                    }
                 }
 
                 uiState.searchResults.isEmpty() -> Box(
@@ -765,12 +885,12 @@ private fun SearchBottomSheet(
                     modifier       = Modifier.fillMaxWidth()
                 ) {
                     items(uiState.searchResults, key = { it.id }) { podcast ->
-                        val isSubscribed = podcast.id in subscribedIds
+                        val isSubscribed = checkSubscribed(podcast)
                         SearchResultItem(
                             podcast      = podcast,
                             isSubscribed = isSubscribed,
                             onSubscribe  = { onSubscribe(podcast) },
-                            onClick      = { 
+                            onClick = { 
                                 if (isSubscribed) {
                                     onPodcastClick(podcast.id)
                                 } else {
@@ -786,7 +906,7 @@ private fun SearchBottomSheet(
             if (previewPodcast != null) {
                 PodcastPreviewBottomSheet(
                     podcast      = previewPodcast!!,
-                    isSubscribed = previewPodcast!!.id in subscribedIds,
+                    isSubscribed = checkSubscribed(previewPodcast!!),
                     onSubscribe  = { 
                         onSubscribe(previewPodcast!!)
                         previewPodcast = null 

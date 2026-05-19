@@ -25,6 +25,9 @@ data class SettingsUiState(
     val importTotal: Int = 0,
     val importError: String? = null,
     val isGlyphEnabled: Boolean = true,
+    val autoDownloadEnabled: Boolean = false,
+    val autoDownloadWifiOnly: Boolean = true,
+    val downloadCompletedNotificationEnabled: Boolean = true,
     val localPodcastCount: Int = 0,
     val totalEpisodeCount: Int = 0,
     val playedEpisodeCount: Int = 0,
@@ -103,14 +106,17 @@ class SettingsViewModel @Inject constructor(
         preferencesDataStore.updateIntervalHours,
         preferencesDataStore.updateWifiOnly,
         preferencesDataStore.glyphEnabled,
+        preferencesDataStore.autoDownloadEnabled,
+        preferencesDataStore.autoDownloadWifiOnly,
+        preferencesDataStore.downloadCompletedNotificationEnabled,
         _importStatus,
         podcastRepository.getSubscribedPodcasts(),
         _cloudSyncSummary,
         episodeRepository.getTotalEpisodeCount(),
         episodeRepository.getPlayedEpisodeCount()
     ) { args ->
-        val importStatus = args[9] as ImportStatus
-        val localPodcasts = args[10] as List<*>
+        val importStatus = args[12] as ImportStatus
+        val localPodcasts = args[13] as List<*>
         SettingsUiState(
             notificationsEnabled = args[0] as Boolean,
             skipForwardSeconds = args[1] as Int,
@@ -121,14 +127,17 @@ class SettingsViewModel @Inject constructor(
             updateIntervalHours = args[6] as Int,
             updateWifiOnly = args[7] as Boolean,
             isGlyphEnabled = args[8] as Boolean,
+            autoDownloadEnabled = args[9] as Boolean,
+            autoDownloadWifiOnly = args[10] as Boolean,
+            downloadCompletedNotificationEnabled = args[11] as Boolean,
             isImporting = importStatus.isImporting,
             importProgress = importStatus.progress,
             importTotal = importStatus.total,
             importError = importStatus.error,
             localPodcastCount = localPodcasts.size,
-            cloudSyncSummary = args[11] as com.example.nothingpodcast.data.repository.SyncRepository.SyncSummary?,
-            totalEpisodeCount = args[12] as Int,
-            playedEpisodeCount = args[13] as Int
+            cloudSyncSummary = args[14] as com.example.nothingpodcast.data.repository.SyncRepository.SyncSummary?,
+            totalEpisodeCount = args[15] as Int,
+            playedEpisodeCount = args[16] as Int
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -163,6 +172,18 @@ class SettingsViewModel @Inject constructor(
 
     fun setGlyphEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesDataStore.setGlyphEnabled(enabled) }
+    }
+
+    fun setAutoDownloadEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesDataStore.setAutoDownloadEnabled(enabled) }
+    }
+
+    fun setAutoDownloadWifiOnly(wifiOnly: Boolean) {
+        viewModelScope.launch { preferencesDataStore.setAutoDownloadWifiOnly(wifiOnly) }
+    }
+
+    fun setDownloadCompletedNotificationEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesDataStore.setDownloadCompletedNotificationEnabled(enabled) }
     }
 
     suspend fun getOpmlData(): String {

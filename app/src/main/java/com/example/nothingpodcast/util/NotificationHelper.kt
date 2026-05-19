@@ -65,4 +65,29 @@ object NotificationHelper {
             // Permission missing
         }
     }
+
+    fun showDownloadCompletedNotification(context: Context, episodeTitle: String, episodeId: String) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
+            .setSmallIcon(R.drawable.ic_nothing_play)
+            .setContentTitle("Download completato")
+            .setContentText(episodeTitle)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(episodeId.hashCode(), notification)
+        } catch (e: SecurityException) {
+            // Permission missing
+        }
+    }
 }

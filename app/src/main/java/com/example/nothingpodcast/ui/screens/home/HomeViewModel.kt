@@ -26,6 +26,7 @@ enum class PodcastViewMode(val columns: Int, val label: String) {
 data class HomeUiState(
     val subscribedPodcasts: List<Podcast>  = emptyList(),
     val suggestedPodcasts:  List<Podcast>  = emptyList(),
+    val recommendedPodcasts: List<Podcast> = emptyList(),
     val searchResults:      List<Podcast>  = emptyList(),
     val searchQuery:        String         = "",
     val isSearching:        Boolean        = false,
@@ -34,7 +35,8 @@ data class HomeUiState(
     val showSearchSheet:    Boolean        = false,
     val viewMode:           PodcastViewMode = PodcastViewMode.GRID3,
     val showGridLabels:     Boolean        = false,
-    val isEditMode:         Boolean        = false
+    val isEditMode:         Boolean        = false,
+    val isLoadingRecommendations: Boolean  = false
 )
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ class HomeViewModel @Inject constructor(
                         if (podcasts.isEmpty() && _uiState.value.suggestedPodcasts.isEmpty()) {
                             loadSuggestions()
                         }
+                        loadRecommendations(podcasts)
                     }
                 }
         }
@@ -190,6 +193,88 @@ class HomeViewModel @Inject constructor(
             }.distinctBy { it.id }
             
             _uiState.update { it.copy(suggestedPodcasts = results) }
+        }
+    }
+
+    private fun loadRecommendations(subscribed: List<Podcast>) {
+        if (subscribed.isEmpty()) {
+            _uiState.update { it.copy(recommendedPodcasts = emptyList()) }
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingRecommendations = true) }
+            val recommendedList = mutableListOf<Podcast>()
+            
+            // Limit to at most 3 subscribed podcasts to search to avoid excessive API requests
+            val sourcePodcasts = subscribed.shuffled().take(3)
+            val subscribedIds = subscribed.map { it.id }.toSet()
+            val subscribedUrls = subscribed.map { it.feedUrl.lowercase().trim() }.toSet()
+            
+            for (podcast in sourcePodcasts) {
+                // Try searching by author first
+                val cleanAuthor = podcast.author
+                    .split(",", " and ", "&", " - ", " -")
+                    .firstOrNull { it.isNotBlank() }
+                    ?.trim()
+                
+                if (!cleanAuthor.isNullOrBlank() && cleanAuthor.length > 2) {
+                    runCatching { podcastRepository.searchPodcasts(cleanAuthor) }
+                        .onSuccess { results ->
+                            val filtered = results.filter { 
+                                it.id !in subscribedIds && 
+                                it.feedUrl.lowercase().trim() !in subscribedUrls &&
+                                it.id !in recommendedList.map { p -> p.id } &&
+                                it.feedUrl.lowercase().trim() !in recommendedList.map { p -> p.feedUrl.lowercase().trim() }
+                            }
+                            recommendedList.addAll(filtered.take(3))
+                        }
+                }
+                
+                // If we don't have enough recommendations yet, try with title keywords
+                if (recommendedList.size < 6) {
+                    val cleanTitle = podcast.title
+                        .split(" ", ":", "-", "|")
+                        .filter { it.length > 3 && it.lowercase() !in listOf("podcast", "show", "with", "radio", "network", "news") }
+                        .randomOrNull()
+                    
+                    if (!cleanTitle.isNullOrBlank()) {
+                        runCatching { podcastRepository.searchPodcasts(cleanTitle) }
+                            .onSuccess { results ->
+                                val filtered = results.filter { 
+                                    it.id !in subscribedIds && 
+                                    it.feedUrl.lowercase().trim() !in subscribedUrls &&
+                                    it.id !in recommendedList.map { p -> p.id } &&
+                                    it.feedUrl.lowercase().trim() !in recommendedList.map { p -> p.feedUrl.lowercase().trim() }
+                                }
+                                recommendedList.addAll(filtered.take(3))
+                            }
+                    }
+                }
+            }
+            
+            // If we still have few or no recommendations, fetch some generic ones based on generic terms
+            if (recommendedList.size < 3) {
+                val fallbacks = listOf("Tech", "Scienza", "Notizie", "Storie", "Cultura")
+                val randomTerm = fallbacks.random()
+                runCatching { podcastRepository.searchPodcasts(randomTerm) }
+                    .onSuccess { results ->
+                        val filtered = results.filter { 
+                            it.id !in subscribedIds && 
+                            it.feedUrl.lowercase().trim() !in subscribedUrls &&
+                            it.id !in recommendedList.map { p -> p.id } &&
+                            it.feedUrl.lowercase().trim() !in recommendedList.map { p -> p.feedUrl.lowercase().trim() }
+                        }
+                        recommendedList.addAll(filtered.take(5))
+                    }
+            }
+            
+            _uiState.update { 
+                it.copy(
+                    recommendedPodcasts = recommendedList.distinctBy { p -> p.id }.take(6),
+                    isLoadingRecommendations = false
+                ) 
+            }
         }
     }
 

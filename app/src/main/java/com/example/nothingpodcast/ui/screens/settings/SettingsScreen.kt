@@ -30,14 +30,17 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 
-private enum class SettingsMenu { MAIN, ADVANCED, PERMISSIONS, OPML, ABOUT, CLOUD, LOGS }
+private enum class SettingsMenu { MAIN, ADVANCED, PERMISSIONS, OPML, ABOUT, CLOUD, LOGS, ACCOUNT }
 
 @Composable
 fun SettingsScreen(
     onBack:    () -> Unit = {},
+    onResetOnboarding: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val authViewModel = hiltViewModel<com.example.nothingpodcast.ui.auth.AuthViewModel>()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -240,20 +243,27 @@ fun SettingsScreen(
                         onBack = { currentMenu = SettingsMenu.MAIN }
                     )
                 }
+                SettingsMenu.ACCOUNT -> {
+                    AccountSettingsMenu(
+                        authState = authState,
+                        onSignOut = { authViewModel.signOut() },
+                        onResetOnboarding = onResetOnboarding,
+                        onBack = { currentMenu = SettingsMenu.MAIN }
+                    )
+                }
                 SettingsMenu.MAIN -> {
                     MainSettingsMenu(
                         uiState = uiState,
+                        authState = authState,
                         onBack = onBack,
                         onNavigateToAdvanced = { currentMenu = SettingsMenu.ADVANCED },
                         onNavigateToOpml = { currentMenu = SettingsMenu.OPML },
                         onNavigateToCloud = { currentMenu = SettingsMenu.CLOUD },
                         onNavigateToAbout = { currentMenu = SettingsMenu.ABOUT },
                         onNavigateToPermissions = { currentMenu = SettingsMenu.PERMISSIONS },
+                        onNavigateToAccount = { currentMenu = SettingsMenu.ACCOUNT },
                         permissionLauncher = permissionLauncher,
-                        viewModel = viewModel,
-                        onPerformClick = {
-                            // Simple haptic feedback or sound if needed
-                        }
+                        viewModel = viewModel
                     )
                 }
             }
@@ -264,15 +274,16 @@ fun SettingsScreen(
 @Composable
 private fun MainSettingsMenu(
     uiState: SettingsUiState,
+    authState: com.example.nothingpodcast.data.auth.AuthState,
     onBack: () -> Unit,
     onNavigateToAdvanced: () -> Unit,
     onNavigateToOpml: () -> Unit,
     onNavigateToCloud: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToPermissions: () -> Unit,
+    onNavigateToAccount: () -> Unit,
     permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    viewModel: SettingsViewModel,
-    onPerformClick: () -> Unit
+    viewModel: SettingsViewModel
 ) {
     val context = LocalContext.current
     
@@ -303,7 +314,37 @@ private fun MainSettingsMenu(
             )
         }
         
-        // ── 1. Playback ───────────────────────────────────────────────────────
+        // ── 1. Account e Gestione Backup ──────────────────────────────────
+        SettingsSection("Account e Gestione Backup")
+        SettingsGroup {
+            val email = when (val state = authState) {
+                is com.example.nothingpodcast.data.auth.AuthState.LoggedIn -> state.email
+                else -> "Ospite (Non loggato)"
+            }
+            SettingsClickRow(
+                label    = "Gestione account",
+                subtitle = email,
+                onClick  = onNavigateToAccount
+            )
+
+            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
+            SettingsClickRow(
+                label    = "Gestione Backup",
+                subtitle = "Backup e sync via Google Drive",
+                onClick  = onNavigateToCloud
+            )
+
+            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
+            SettingsClickRow(
+                label    = stringResource(R.string.header_opml),
+                subtitle = "Importa/Esporta file OPML",
+                onClick  = onNavigateToOpml
+            )
+        }
+
+        // ── 2. Playback ───────────────────────────────────────────────────────
         SettingsSection(stringResource(R.string.header_playback))
         SettingsGroup {
             SettingsChipRow(
@@ -324,37 +365,9 @@ private fun MainSettingsMenu(
                 suffix   = "s"
             )
         }
-        
-        // ── Integrazione Nothing OS ──────────────────────────────────────────
-        if (android.os.Build.MANUFACTURER.contains("Nothing", ignoreCase = true)) {
-            SettingsSection("Integrazione Nothing OS")
-            SettingsGroup {
-                SettingsToggleRow(
-                    label    = "Glyph Interface",
-                    subtitle = "Feedback luminosi discreti durante la riproduzione",
-                    checked  = uiState.isGlyphEnabled,
-                    onToggle = viewModel::setGlyphEnabled,
-                    icon     = Icons.Outlined.Lightbulb
-                )
-                
-                if (uiState.isGlyphEnabled) {
-                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
-                    
-                    SettingsClickRow(
-                        label    = "Prova i LED",
-                        subtitle = "Invia un segnale di test all'hardware",
-                        icon     = Icons.Outlined.FlashOn,
-                        onClick  = { 
-                            onPerformClick()
-                            viewModel.testGlyph() 
-                        }
-                    )
-                }
-            }
-        }
 
-        // ── 2. Updates ───────────────────────────────────────────────────────
-        SettingsSection("Aggiornamenti")
+        // ── 3. Verifica Nuovi Episodi ────────────────────────────────────────
+        SettingsSection("Verifica Nuovi Episodi")
         SettingsGroup {
             SettingsToggleRow(
                 label    = "Controllo automatico",
@@ -367,7 +380,7 @@ private fun MainSettingsMenu(
                 HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
                 
                 SettingsChipRow(
-                    label    = "Frequenza",
+                    label    = "Frequenza di verifica",
                     options  = listOf(1, 3, 6, 12, 24),
                     selected = uiState.updateIntervalHours,
                     onSelect = viewModel::setUpdateInterval,
@@ -377,17 +390,15 @@ private fun MainSettingsMenu(
                 HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
 
                 SettingsToggleRow(
-                    label    = "Solo tramite WiFi",
-                    subtitle = "Risparmia dati mobili",
+                    label    = "Solo tramite WiFi (Verifica)",
+                    subtitle = "Risparmia dati mobili durante la verifica in background",
                     checked  = uiState.updateWifiOnly,
                     onToggle = viewModel::setUpdateWifiOnly
                 )
             }
-        }
 
-        // ── 3. Notifications ──────────────────────────────────────────────────
-        SettingsSection(stringResource(R.string.header_notifications))
-        SettingsGroup {
+            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
             SettingsToggleRow(
                 label    = "Avvisi nuovi episodi",
                 subtitle = "Ricevi una notifica quando esce un nuovo episodio",
@@ -402,22 +413,49 @@ private fun MainSettingsMenu(
             )
         }
 
-        // ── 4. Data & Sync ───────────────────────────────────────────────────
-        SettingsSection("Dati e Sincronizzazione")
+        // ── 4. Download Automatico ───────────────────────────────────────────
+        SettingsSection("Download Automatico")
         SettingsGroup {
-            SettingsClickRow(
-                label    = "Sincronizzazione Cloud",
-                subtitle = "Backup e sync via Google Drive",
-                onClick  = onNavigateToCloud
+            SettingsToggleRow(
+                label    = "Download automatico",
+                subtitle = "Avvia il download all'uscita di un nuovo episodio",
+                checked  = uiState.autoDownloadEnabled,
+                onToggle = viewModel::setAutoDownloadEnabled
             )
 
-            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+            if (uiState.autoDownloadEnabled) {
+                HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
 
-            SettingsClickRow(
-                label    = stringResource(R.string.header_opml),
-                subtitle = "Importa/Esporta file OPML",
-                onClick  = onNavigateToOpml
-            )
+                SettingsToggleRow(
+                    label    = "Solo tramite WiFi (Download)",
+                    subtitle = "Scarica i nuovi episodi solo in presenza di rete WiFi",
+                    checked  = uiState.autoDownloadWifiOnly,
+                    onToggle = viewModel::setAutoDownloadWifiOnly
+                )
+
+                HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
+                SettingsToggleRow(
+                    label    = "Notifica completamento download",
+                    subtitle = "Mostra una notifica al termine del download",
+                    checked  = uiState.downloadCompletedNotificationEnabled,
+                    onToggle = viewModel::setDownloadCompletedNotificationEnabled
+                )
+            }
+        }
+        
+        // ── Integrazione Nothing OS ──────────────────────────────────────────
+        if (android.os.Build.MANUFACTURER.contains("Nothing", ignoreCase = true)) {
+            SettingsSection("Integrazione Nothing OS")
+            SettingsGroup {
+                SettingsToggleRow(
+                    label    = "Glyph Interface",
+                    subtitle = "Feedback luminosi discreti durante la riproduzione",
+                    checked  = uiState.isGlyphEnabled,
+                    onToggle = viewModel::setGlyphEnabled,
+                    icon     = Icons.Outlined.Lightbulb
+                )
+            }
         }
 
         // ── 5. Info & System ─────────────────────────────────────────────────
@@ -839,11 +877,12 @@ private fun SettingsClickRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.titleMedium, color = NothingWhite)
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = NothingOnSurfaceDim)
+            Text(label, style = MaterialTheme.typography.titleLarge, color = NothingWhite)
+            Spacer(Modifier.height(6.dp))
+            Text(subtitle, style = MaterialTheme.typography.labelLarge, color = NothingOnSurfaceVariant)
         }
         icon?.let {
-            Icon(it, null, tint = NothingOnSurfaceDim)
+            Icon(it, null, tint = NothingOnSurfaceVariant)
         }
     }
 }
@@ -871,10 +910,10 @@ private fun SettingsToggleRow(
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.titleMedium, color = NothingWhite)
+            Text(label, style = MaterialTheme.typography.titleLarge, color = NothingWhite)
             if (subtitle != null) {
-                Spacer(Modifier.height(2.dp))
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = NothingOnSurfaceDim)
+                Spacer(Modifier.height(6.dp))
+                Text(subtitle, style = MaterialTheme.typography.labelLarge, color = NothingOnSurfaceDim)
             }
         }
         NothingSwitch(
@@ -888,7 +927,7 @@ private fun SettingsToggleRow(
 private fun SettingsSection(title: String) {
     Text(
         text     = title.uppercase(),
-        style    = MaterialTheme.typography.labelSmall,
+        style    = MaterialTheme.typography.labelMedium,
         letterSpacing = 1.sp,
         color    = NothingOnSurfaceVariant,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
@@ -929,10 +968,10 @@ private fun NothingSwitch(
         modifier = Modifier
             .size(trackWidth, trackHeight)
             .clip(CircleShape) // Pill shape
-            .background(if (checked) NothingWhite else NothingSurfaceHigh)
+            .background(if (checked) NothingWhite else NothingBlack)
             .border(
                 width = 1.dp,
-                color = if (checked) NothingWhite else NothingBorderDim,
+                color = if (checked) NothingWhite else NothingBorder,
                 shape = CircleShape
             )
             .clickable(
@@ -947,7 +986,6 @@ private fun NothingSwitch(
                 .size(thumbSize)
                 .clip(CircleShape) // Circular thumb
                 .background(if (checked) NothingBlack else NothingWhite)
-                .shadow(elevation = 2.dp, shape = CircleShape)
         )
     }
 }
@@ -961,7 +999,7 @@ private fun SettingsChipRow(
     suffix: String = ""
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = NothingWhite)
+        Text(label, style = MaterialTheme.typography.titleLarge, color = NothingWhite)
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             options.forEach { opt ->
@@ -994,8 +1032,8 @@ private fun SettingsInfoRow(label: String, value: String) {
             .padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = NothingWhite)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = NothingOnSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.titleLarge, color = NothingWhite)
+        Text(value, style = MaterialTheme.typography.labelLarge, color = NothingOnSurfaceVariant)
     }
 }
 @Composable
@@ -1023,7 +1061,7 @@ private fun CloudSyncMenu(
                 Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.ArrowBack, "Indietro", tint = NothingWhite)
             }
             Text(
-                text = "Sincronizzazione Cloud",
+                text = "Gestione Backup",
                 style = MaterialTheme.typography.displaySmall,
                 color = NothingWhite
             )
@@ -1033,7 +1071,7 @@ private fun CloudSyncMenu(
         Text(
             text = "Esegui il backup delle tue iscrizioni e dello stato di ascolto sul tuo spazio personale Google Drive.",
             style = MaterialTheme.typography.bodyMedium,
-            color = NothingOnSurfaceDim,
+            color = NothingOnSurfaceVariant,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -1112,55 +1150,180 @@ private fun SyncComparisonCard(
             ) {
                 // Locale
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("LOCALE", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
+                    Text(
+                        text = "LOCALE",
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 2.sp,
+                        color = NothingOnSurfaceVariant
+                    )
                     Text(
                         text = localCount.toString(),
                         style = MaterialTheme.typography.displayLarge,
                         color = NothingWhite
                     )
-                    Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
-                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "podcast",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = NothingOnSurfaceVariant
+                    )
+                    Spacer(Modifier.height(6.dp))
                     Text(
                         text = "$playedEpisodes / $totalEpisodes riprodotti",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 10.sp
+                        color = NothingRed,
+                        fontSize = 11.sp
                     )
                 }
 
                 // Divider (Vertical)
-                Box(modifier = Modifier.width(1.dp).height(40.dp).background(NothingBorderDim))
+                Box(modifier = Modifier.width(1.dp).height(64.dp).background(NothingBorderDim))
 
                 // Cloud
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("CLOUD", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceVariant)
+                    Text(
+                        text = "CLOUD",
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 2.sp,
+                        color = NothingOnSurfaceVariant
+                    )
                     Text(
                         text = if (lastSync != null) cloudCount.toString() else "--",
                         style = MaterialTheme.typography.displayLarge,
                         color = if (lastSync != null) NothingWhite else NothingOnSurfaceVariant
                     )
-                    Text("podcast", style = MaterialTheme.typography.labelSmall, color = NothingOnSurfaceDim)
+                    Text(
+                        text = "podcast",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = NothingOnSurfaceVariant
+                    )
                     if (lastSync != null) {
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(6.dp))
                         Text(
                             text = if (cloudTotalEpisodes > 0) "$cloudPlayedEpisodes / $cloudTotalEpisodes riprodotti" else "$cloudPlayedEpisodes riprodotti",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 10.sp
+                            color = NothingRed,
+                            fontSize = 11.sp
                         )
                     }
                 }
             }
 
             if (lastSync != null) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
                 val date = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.ITALIAN).format(java.util.Date(lastSync))
                 Text(
-                    text = "Ultimo backup: $date",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = NothingOnSurfaceDim
+                    text = "ULTIMO BACKUP: $date",
+                    style = MaterialTheme.typography.labelMedium,
+                    letterSpacing = 1.sp,
+                    color = NothingOnSurfaceVariant
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AccountSettingsMenu(
+    authState: com.example.nothingpodcast.data.auth.AuthState,
+    onSignOut: () -> Unit,
+    onResetOnboarding: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(NothingBlack)
+            .verticalScroll(rememberScrollState())
+    ) {
+        // ── Header ────────────────────────────────────────────────────────
+        Row(
+            modifier          = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Indietro",
+                    tint               = NothingWhite
+                )
+            }
+            Text(
+                text  = "ACCOUNT",
+                style = MaterialTheme.typography.displaySmall,
+                color = NothingWhite
+            )
+        }
+
+        SettingsSection("Dettagli account")
+        SettingsGroup {
+            when (authState) {
+                is com.example.nothingpodcast.data.auth.AuthState.LoggedIn -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = "ACCESSO EFFETTUATO COME",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = NothingOnSurfaceVariant,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = authState.email,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = NothingWhite
+                        )
+                    }
+
+                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
+                    SettingsClickRow(
+                        label = "Esci",
+                        subtitle = "Disconnettiti da questo dispositivo",
+                        icon = Icons.Outlined.Logout,
+                        onClick = {
+                            onSignOut()
+                            onBack()
+                        }
+                    )
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = "MODALITÀ OSPITE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = NothingOnSurfaceVariant,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Stai usando l'app come ospite. Accedi o crea un account per sincronizzare le tue iscrizioni sul cloud.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = NothingOnSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+
+                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 20.dp))
+
+                    SettingsClickRow(
+                        label = "Accedi o Registrati",
+                        subtitle = "Crea un account o effettua l'accesso",
+                        icon = Icons.Outlined.PersonAdd,
+                        onClick = onResetOnboarding
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
     }
 }

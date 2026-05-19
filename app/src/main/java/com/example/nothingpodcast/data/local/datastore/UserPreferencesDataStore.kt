@@ -37,6 +37,9 @@ class UserPreferencesDataStore @Inject constructor(
         val UPDATE_INTERVAL_HOURS   = intPreferencesKey("update_interval_hours")
         val UPDATE_WIFI_ONLY        = booleanPreferencesKey("update_wifi_only")
         val GLYPH_ENABLED           = booleanPreferencesKey("glyph_enabled")
+        val AUTO_DOWNLOAD_ENABLED   = booleanPreferencesKey("auto_download_enabled")
+        val AUTO_DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("auto_download_wifi_only")
+        val DOWNLOAD_COMPLETED_NOTIFICATION = booleanPreferencesKey("download_completed_notification")
     }
 
     val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data
@@ -83,6 +86,15 @@ class UserPreferencesDataStore @Inject constructor(
 
     val glyphEnabled: Flow<Boolean> = context.dataStore.data
         .map { it[Keys.GLYPH_ENABLED] ?: true }
+
+    val autoDownloadEnabled: Flow<Boolean> = context.dataStore.data
+        .map { it[Keys.AUTO_DOWNLOAD_ENABLED] ?: false }
+
+    val autoDownloadWifiOnly: Flow<Boolean> = context.dataStore.data
+        .map { it[Keys.AUTO_DOWNLOAD_WIFI_ONLY] ?: true }
+
+    val downloadCompletedNotificationEnabled: Flow<Boolean> = context.dataStore.data
+        .map { it[Keys.DOWNLOAD_COMPLETED_NOTIFICATION] ?: true }
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.NOTIFICATIONS_ENABLED] = enabled }
@@ -142,5 +154,17 @@ class UserPreferencesDataStore @Inject constructor(
 
     suspend fun setGlyphEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.GLYPH_ENABLED] = enabled }
+    }
+
+    suspend fun setAutoDownloadEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.AUTO_DOWNLOAD_ENABLED] = enabled }
+    }
+
+    suspend fun setAutoDownloadWifiOnly(wifiOnly: Boolean) {
+        context.dataStore.edit { it[Keys.AUTO_DOWNLOAD_WIFI_ONLY] = wifiOnly }
+    }
+
+    suspend fun setDownloadCompletedNotificationEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.DOWNLOAD_COMPLETED_NOTIFICATION] = enabled }
     }
 }

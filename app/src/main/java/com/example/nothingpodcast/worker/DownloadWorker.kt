@@ -6,9 +6,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.example.nothingpodcast.data.repository.EpisodeRepository
+import com.example.nothingpodcast.data.local.datastore.UserPreferencesDataStore
+import com.example.nothingpodcast.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -21,7 +24,8 @@ class DownloadWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val episodeRepository: EpisodeRepository,
     private val okHttpClient: OkHttpClient,
-    private val glyphManager: com.example.nothingpodcast.util.NothingGlyphManager
+    private val glyphManager: com.example.nothingpodcast.util.NothingGlyphManager,
+    private val preferencesDataStore: UserPreferencesDataStore
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -70,6 +74,18 @@ class DownloadWorker @AssistedInject constructor(
             
             // All LEDs on!
             glyphManager.showDownloadComplete()
+
+            try {
+                val prefEnabled = preferencesDataStore.downloadCompletedNotificationEnabled.first()
+                if (prefEnabled) {
+                    val episode = episodeRepository.getEpisodeById(episodeId)
+                    if (episode != null) {
+                        NotificationHelper.showDownloadCompletedNotification(applicationContext, episode.title, episode.id)
+                    }
+                }
+            } catch (e: Exception) {
+                com.example.nothingpodcast.util.AppLogger.e("Failed to show download completed notification", e)
+            }
             
             Result.success(workDataOf(KEY_FILE_PATH to outputFile.absolutePath))
         } catch (e: Exception) {

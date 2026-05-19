@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.*
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +21,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
@@ -33,7 +39,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class
+)
 @Composable
 fun PodcastDetailScreen(
     podcastId: String,
@@ -55,19 +64,77 @@ fun PodcastDetailScreen(
             .background(NothingBlack)
     ) {
         // ── Top bar ────────────────────────────────────────────────────────
+        var searchActive by remember { mutableStateOf(false) }
+        val focusRequester = remember { FocusRequester() }
+        val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.Outlined.ArrowBack,
-                contentDescription = "Indietro",
-                tint = NothingWhite
-            )
-        }
+            if (searchActive) {
+                IconButton(onClick = { 
+                    searchActive = false 
+                    viewModel.setSearchQuery("")
+                }) {
+                    Icon(
+                        imageVector = Icons.Outlined.ArrowBack,
+                        contentDescription = "Annulla ricerca",
+                        tint = NothingWhite
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::setSearchQuery,
+                    placeholder = {
+                        Text("Cerca tra gli episodi…", style = MaterialTheme.typography.bodyMedium, color = NothingOnSurfaceDim)
+                    },
+                    trailingIcon = if (uiState.searchQuery.isNotBlank()) ({
+                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Icon(Icons.Outlined.Close, null, tint = NothingOnSurfaceVariant)
+                        }
+                    }) else null,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NothingWhite,
+                        unfocusedBorderColor = NothingBorder,
+                        cursorColor = NothingWhite,
+                        focusedTextColor = NothingWhite,
+                        unfocusedTextColor = NothingWhite,
+                        focusedContainerColor = NothingSurfaceHigh,
+                        unfocusedContainerColor = NothingSurfaceHigh
+                    ),
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                )
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
+            } else {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.Outlined.ArrowBack,
+                        contentDescription = "Indietro",
+                        tint = NothingWhite
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { searchActive = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = "Cerca episodi",
+                        tint = NothingWhite
+                    )
+                }
+            }
         }
 
         if (uiState.isLoading) {
@@ -87,149 +154,181 @@ fun PodcastDetailScreen(
             var selectedIds by remember { mutableStateOf(setOf<String>()) }
             var showSummarySheet by remember { mutableStateOf(false) }
 
-            LazyColumn {
-                // Podcast header
-                uiState.podcast?.let { podcast ->
-                    item { 
-                        PodcastHeader(
-                            podcast = podcast,
-                            onUnsubscribe = viewModel::unsubscribe,
-                            onRefresh = viewModel::refresh,
-                            onShowFilters = { viewModel.setShowFilterSheet(true) },
-                            onShowSummary = { showSummarySheet = true }
-                        ) 
-                    }
+            val pullState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                state = pullState,
+                modifier = Modifier.fillMaxSize(),
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullState,
+                        isRefreshing = uiState.isRefreshing,
+                        containerColor = NothingSurfaceHigh,
+                        color = NothingWhite,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
                 }
-
-                if (showSummarySheet) {
-                    item {
-                        PodcastSummaryBottomSheet(
-                            podcast = uiState.podcast!!,
-                            onToggleSubscription = {
-                                if (uiState.podcast?.isSubscribed == true) viewModel.unsubscribe()
-                                else viewModel.subscribe() // Need to add subscribe() to ViewModel or check if it exists
-                                showSummarySheet = false
-                            },
-                            onDismiss = { showSummarySheet = false }
-                        )
-                    }
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (selectionMode) {
-                            val allSelected = selectedIds.size == episodes.size && episodes.isNotEmpty()
-                            IconButton(onClick = {
-                                if (allSelected) selectedIds = emptySet()
-                                else selectedIds = episodes.map { it.id }.toSet()
-                            }) {
-                                Icon(
-                                    imageVector = if (allSelected) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
-                                    contentDescription = "Seleziona tutto",
-                                    tint = NothingWhite
-                                )
-                            }
-
-                            Spacer(Modifier.weight(1f))
-
-                            IconButton(
-                                onClick = {
-                                    if (uiState.filterType == EpisodeFilter.UNPLAYED) {
-                                        selectedIds.forEach { dissolvingIds[it] = true }
-                                    } else {
-                                        viewModel.markEpisodesPlayed(selectedIds)
-                                    }
-                                    selectionMode = false
-                                    selectedIds = emptySet()
-                                },
-                                enabled = selectedIds.isNotEmpty()
-                            ) {
-                                Icon(
-                                    Icons.Outlined.CheckCircle, 
-                                    contentDescription = "Segna come riprodotti", 
-                                    tint = if (selectedIds.isNotEmpty()) NothingWhite else NothingOnSurfaceDim
-                                )
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    viewModel.markEpisodesUnplayed(selectedIds)
-                                    selectionMode = false
-                                    selectedIds = emptySet()
-                                },
-                                enabled = selectedIds.isNotEmpty()
-                            ) {
-                                Icon(
-                                    Icons.Outlined.RadioButtonUnchecked, 
-                                    contentDescription = "Segna come non riprodotti", 
-                                    tint = if (selectedIds.isNotEmpty()) NothingWhite else NothingOnSurfaceDim
-                                )
-                            }
-
-                            IconButton(onClick = { selectionMode = false; selectedIds = emptySet() }) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Chiudi", tint = NothingWhite)
-                            }
-                        } else {
-                            Text(
-                                text     = "EPISODI",
-                                style    = MaterialTheme.typography.labelLarge,
-                                color    = NothingOnSurfaceDim,
-                                modifier = Modifier.weight(1f)
-                            )
-
+            ) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    // Podcast header
+                    uiState.podcast?.let { podcast ->
+                        item { 
+                            PodcastHeader(
+                                podcast = podcast,
+                                onUnsubscribe = viewModel::unsubscribe,
+                                onRefresh = viewModel::refresh,
+                                onShowFilters = { viewModel.setShowFilterSheet(true) },
+                                onShowSummary = { showSummarySheet = true }
+                            ) 
                         }
                     }
-                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
-                }
 
-
-
-                itemsIndexed(episodes, key = { _, ep -> ep.id }) { index, episode ->
-                    val isSelected = selectedIds.contains(episode.id)
-                    val isPlayingThis = (episode.id == playingEpisodeId)
-                    val isDissolving = dissolvingIds.containsKey(episode.id)
-                    
-                    com.example.nothingpodcast.ui.components.PixelDissolveContainer(
-                        isDissolving = isDissolving,
-                        onAnimationEnd = {
-                            // First mark played to update DB, then remove from dissolving to let it vanish
-                            viewModel.markEpisodePlayed(episode.id)
-                            dissolvingIds.remove(episode.id)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem()
-                    ) {
-                        EpisodeListItem(
-                            episode        = episode,
-                            isPlaying      = isPlayingThis && isPlayerPlaying,
-                            downloadProgress = uiState.downloadProgress[episode.id],
-                            selectionMode = selectionMode,
-                            isSelected = isSelected,
-                            onToggleSelection = {
-                                selectedIds = if (isSelected) selectedIds - episode.id else selectedIds + episode.id
-                            },
-                            onEnterSelectionMode = { selectionMode = true; selectedIds = setOf(episode.id) },
-                            onPlay         = { 
-                                playerViewModel.playEpisode(episode)
-                                onNavigateToPlayer()
-                            },
-                            onPause        = { playerViewModel.togglePlayPause() },
-                            onMarkPlayed   = { 
-                                // Always trigger dissolve for feedback, even if not filtered out
-                                dissolvingIds[episode.id] = true
-                            },
-                            onMarkUnplayed = { viewModel.markEpisodeUnplayed(episode.id) },
-                            onDownload     = { viewModel.downloadEpisode(episode) },
-                            onDeleteDownload = { viewModel.deleteDownload(episode) } 
-                        )
+                    if (showSummarySheet) {
+                        item {
+                            PodcastSummaryBottomSheet(
+                                podcast = uiState.podcast!!,
+                                onToggleSubscription = {
+                                    if (uiState.podcast?.isSubscribed == true) viewModel.unsubscribe()
+                                    else viewModel.subscribe() // Need to add subscribe() to ViewModel or check if it exists
+                                    showSummarySheet = false
+                                },
+                                onDismiss = { showSummarySheet = false }
+                            )
+                        }
                     }
-                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (selectionMode) {
+                                val allSelected = selectedIds.size == episodes.size && episodes.isNotEmpty()
+                                IconButton(onClick = {
+                                    if (allSelected) selectedIds = emptySet()
+                                    else selectedIds = episodes.map { it.id }.toSet()
+                                }) {
+                                    Icon(
+                                        imageVector = if (allSelected) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
+                                        contentDescription = "Seleziona tutto",
+                                        tint = NothingWhite
+                                    )
+                                }
+
+                                Spacer(Modifier.weight(1f))
+
+                                IconButton(
+                                    onClick = {
+                                        if (uiState.filterType == EpisodeFilter.UNPLAYED) {
+                                            selectedIds.forEach { dissolvingIds[it] = true }
+                                        } else {
+                                            viewModel.markEpisodesPlayed(selectedIds)
+                                        }
+                                        selectionMode = false
+                                        selectedIds = emptySet()
+                                    },
+                                    enabled = selectedIds.isNotEmpty()
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.CheckCircle, 
+                                        contentDescription = "Segna come riprodotti", 
+                                        tint = if (selectedIds.isNotEmpty()) NothingWhite else NothingOnSurfaceDim
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = {
+                                        viewModel.markEpisodesUnplayed(selectedIds)
+                                        selectionMode = false
+                                        selectedIds = emptySet()
+                                    },
+                                    enabled = selectedIds.isNotEmpty()
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.RadioButtonUnchecked, 
+                                        contentDescription = "Segna come non riprodotti", 
+                                        tint = if (selectedIds.isNotEmpty()) NothingWhite else NothingOnSurfaceDim
+                                    )
+                                }
+
+                                IconButton(onClick = { selectionMode = false; selectedIds = emptySet() }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Chiudi", tint = NothingWhite)
+                                }
+                            } else {
+                                Text(
+                                    text     = "EPISODI",
+                                    style    = MaterialTheme.typography.labelLarge,
+                                    color    = NothingOnSurfaceDim,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                            }
+                        }
+                        HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
+                    }
+
+                    if (episodes.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (uiState.searchQuery.isNotBlank()) "Nessun episodio corrisponde alla ricerca" else "Nessun episodio in questa sezione",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = NothingOnSurfaceDim
+                                )
+                            }
+                        }
+                    }
+
+                    itemsIndexed(episodes, key = { _, ep -> ep.id }) { index, episode ->
+                        val isSelected = selectedIds.contains(episode.id)
+                        val isPlayingThis = (episode.id == playingEpisodeId)
+                        val isDissolving = dissolvingIds.containsKey(episode.id)
+                        
+                        com.example.nothingpodcast.ui.components.PixelDissolveContainer(
+                            isDissolving = isDissolving,
+                            onAnimationEnd = {
+                                // First mark played to update DB, then remove from dissolving to let it vanish
+                                viewModel.markEpisodePlayed(episode.id)
+                                dissolvingIds.remove(episode.id)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem()
+                        ) {
+                            EpisodeListItem(
+                                episode        = episode,
+                                isPlaying      = isPlayingThis && isPlayerPlaying,
+                                downloadProgress = uiState.downloadProgress[episode.id],
+                                selectionMode = selectionMode,
+                                isSelected = isSelected,
+                                onToggleSelection = {
+                                    selectedIds = if (isSelected) selectedIds - episode.id else selectedIds + episode.id
+                                },
+                                onEnterSelectionMode = { selectionMode = true; selectedIds = setOf(episode.id) },
+                                onPlay         = { 
+                                    playerViewModel.playEpisode(episode)
+                                    onNavigateToPlayer()
+                                },
+                                onPause        = { playerViewModel.togglePlayPause() },
+                                onMarkPlayed   = { 
+                                    // Always trigger dissolve for feedback, even if not filtered out
+                                    dissolvingIds[episode.id] = true
+                                },
+                                onMarkUnplayed = { viewModel.markEpisodeUnplayed(episode.id) },
+                                onDownload     = { viewModel.downloadEpisode(episode) },
+                                onDeleteDownload = { viewModel.deleteDownload(episode) } 
+                            )
+                        }
+                        HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
+                    }
                 }
             }
         }
@@ -292,7 +391,6 @@ private fun PodcastHeader(
                     modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
                 // Menu
-                var menuExpanded by remember { mutableStateOf(false) }
                 Box {
                     Icon(
                         imageVector = Icons.Outlined.MoreHoriz, 
@@ -300,39 +398,8 @@ private fun PodcastHeader(
                         tint = NothingOnSurfaceDim,
                         modifier = Modifier
                             .size(24.dp)
-                            .clickable { menuExpanded = true }
+                            .clickable { onShowFilters() }
                     )
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        containerColor = NothingSurfaceHigh
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Ordinamento e filtri", style = MaterialTheme.typography.labelMedium, color = NothingWhite) },
-                            onClick = {
-                                menuExpanded = false
-                                onShowFilters()
-                            }
-                        )
-                        HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_refresh), style = MaterialTheme.typography.labelMedium, color = NothingWhite) },
-                            onClick = {
-                                menuExpanded = false
-                                onRefresh()
-                            }
-                        )
-                        if (podcast.isSubscribed) {
-                            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_unsubscribe), style = MaterialTheme.typography.labelMedium, color = NothingError) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onUnsubscribe()
-                                }
-                            )
-                        }
-                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -442,7 +509,7 @@ private fun EpisodeListItem(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim,
+                        color = NothingOnSurfaceVariant,
                         fontSize = 10.sp,
                         modifier = Modifier.padding(end = 4.dp)
                     )
@@ -451,27 +518,27 @@ private fun EpisodeListItem(
                 Text(
                     text = dateStr,
                     style = MaterialTheme.typography.labelSmall,
-                    color = NothingOnSurfaceDim
+                    color = NothingOnSurfaceVariant
                 )
                 
                 if (durationStr.isNotBlank()) {
                     Text(
                         text = " • $durationStr",
                         style = MaterialTheme.typography.labelSmall,
-                        color = NothingOnSurfaceDim
+                        color = NothingOnSurfaceVariant
                     )
                 }
                 
                 if (!episode.episodeType.isNullOrBlank() && episode.episodeType != "full") {
                     Spacer(Modifier.width(8.dp))
                     Surface(
-                        color = NothingOnSurfaceDim.copy(alpha = 0.1f),
+                        color = NothingOnSurfaceVariant.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(2.dp)
                     ) {
                         Text(
                             text = episode.episodeType!!.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = NothingOnSurfaceDim,
+                            color = NothingOnSurfaceVariant,
                             fontSize = 8.sp,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                         )
@@ -483,8 +550,6 @@ private fun EpisodeListItem(
             Text(
                 text     = episode.title,
                 style    = MaterialTheme.typography.titleMedium,
-                fontFamily = SpaceMonoFamily,
-                fontSize = 14.sp,
                 color    = if (episode.isPlayed && !isPlaying) NothingOnSurfaceVariant else NothingWhite,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -529,12 +594,12 @@ private fun EpisodeListItem(
                         Text(
                             text = formatDurationMs(episode.playbackPosition * 1000),
                             style = MaterialTheme.typography.labelSmall,
-                            color = NothingOnSurfaceDim
+                            color = NothingOnSurfaceVariant
                         )
                         Text(
                             text = formatDurationMs(episode.duration * 1000),
                             style = MaterialTheme.typography.labelSmall,
-                            color = NothingOnSurfaceDim
+                            color = NothingOnSurfaceVariant
                         )
                     }
                 }
@@ -597,58 +662,18 @@ private fun EpisodeListItem(
             }
         }
 
-        // Context menu (triggered by long press)
-        Box {
-            DropdownMenu(
-                expanded         = expanded,
-                onDismissRequest = { expanded = false },
-                containerColor   = NothingSurfaceHigh
-            ) {
-                // Streaming
-                if (!episode.isDownloaded) {
-                    DropdownMenuItem(
-                        text    = { Text(stringResource(R.string.action_stream), style = MaterialTheme.typography.labelMedium, color = NothingWhite) },
-                        onClick = {
-                            expanded = false
-                            onPlay()
-                        }
-                    )
-                }
-                
-                // Played / Unplayed
-                DropdownMenuItem(
-                    text    = { 
-                        Text(
-                            text = if (episode.isPlayed) stringResource(R.string.action_mark_unplayed) 
-                                   else stringResource(R.string.action_mark_played), 
-                            style = MaterialTheme.typography.labelMedium, 
-                            color = NothingWhite
-                        ) 
-                    },
-                    onClick = {
-                        expanded = false
-                        if (episode.isPlayed) onMarkUnplayed() else onMarkPlayed()
-                    }
-                )
-
-                // Multi selection
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_multi_selection), style = MaterialTheme.typography.labelMedium, color = NothingWhite) },
-                    onClick = {
-                        expanded = false
-                        onEnterSelectionMode()
-                    }
-                )
-                
-                // Delete
-                if (episode.isDownloaded) {
-                    HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
-                    DropdownMenuItem(
-                        text    = { Text(stringResource(R.string.action_delete_download), style = MaterialTheme.typography.labelMedium, color = NothingError) },
-                        onClick = { expanded = false; onDeleteDownload() }
-                    )
-                }
-            }
+        if (expanded) {
+            EpisodeOptionsBottomSheet(
+                episodeTitle         = episode.title,
+                isDownloaded         = episode.isDownloaded,
+                isPlayed             = episode.isPlayed,
+                onPlay               = onPlay,
+                onMarkPlayed         = onMarkPlayed,
+                onMarkUnplayed       = onMarkUnplayed,
+                onEnterSelectionMode = onEnterSelectionMode,
+                onDeleteDownload     = onDeleteDownload,
+                onDismiss            = { expanded = false }
+            )
         }
     }
 }
@@ -864,13 +889,14 @@ private fun PodcastSummaryBottomSheet(
                 Column {
                     Text(
                         text = podcast.title,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = NothingWhite
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = podcast.author,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = NothingOnSurfaceDim
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = NothingOnSurfaceVariant
                     )
                     
                     if (!podcast.medium.isNullOrBlank()) {
@@ -944,25 +970,27 @@ private fun PodcastSummaryBottomSheet(
             Spacer(Modifier.height(24.dp))
             
             Text(
-                text = "Descrizione",
-                style = MaterialTheme.typography.titleSmall,
-                color = NothingWhite,
+                text = "DESCRIZIONE",
+                style = MaterialTheme.typography.labelSmall,
+                color = NothingOnSurfaceDim,
+                letterSpacing = 2.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
             Text(
                 text = podcast.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = NothingOnSurfaceDim,
-                lineHeight = 24.sp
+                color = NothingWhite.copy(alpha = 0.85f),
+                lineHeight = 22.sp
             )
 
             if (podcast.persons.isNotEmpty()) {
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = "CREDITI",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = NothingWhite,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NothingOnSurfaceDim,
+                    letterSpacing = 2.sp,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 
@@ -1041,6 +1069,137 @@ private fun PodcastSummaryBottomSheet(
             }
             
             Spacer(Modifier.height(40.dp))
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EpisodeOptionsBottomSheet(
+    episodeTitle: String,
+    isDownloaded: Boolean,
+    isPlayed:     Boolean,
+    onPlay:       () -> Unit,
+    onMarkPlayed: () -> Unit,
+    onMarkUnplayed: () -> Unit,
+    onEnterSelectionMode: () -> Unit,
+    onDeleteDownload: () -> Unit,
+    onDismiss:    () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor   = NothingSurfaceHigh,
+        shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+        ) {
+            // Episode Title (as header)
+            Text(
+                text     = episodeTitle,
+                style    = MaterialTheme.typography.titleMedium,
+                color    = NothingWhite,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+
+            // Button 1: Riproduci / Streaming
+            if (!isDownloaded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NothingBlack)
+                        .clickable { 
+                            onDismiss()
+                            onPlay() 
+                        }
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "RIPRODUCI IN STREAMING",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = NothingWhite
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Button 2: Segna come letto / non letto
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(NothingBlack)
+                    .clickable { 
+                        onDismiss()
+                        if (isPlayed) onMarkUnplayed() else onMarkPlayed() 
+                    }
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isPlayed) "SEGNA COME NON RIPRODOTTO" else "SEGNA COME RIPRODOTTO",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = NothingWhite
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Button 3: Selezione multipla
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(NothingBlack)
+                    .clickable { 
+                        onDismiss()
+                        onEnterSelectionMode() 
+                    }
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "SELEZIONE MULTIPLA",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = NothingWhite
+                )
+            }
+
+            if (isDownloaded) {
+                Spacer(Modifier.height(12.dp))
+
+                // Button 4: Elimina download
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NothingBlack)
+                        .clickable { 
+                            onDismiss()
+                            onDeleteDownload() 
+                        }
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "ELIMINA DOWNLOAD",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = NothingRed
+                    )
+                }
+            }
         }
     }
 }
