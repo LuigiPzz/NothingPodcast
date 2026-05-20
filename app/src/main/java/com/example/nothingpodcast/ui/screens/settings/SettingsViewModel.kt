@@ -204,6 +204,12 @@ class SettingsViewModel @Inject constructor(
                 _importStatus.value = ImportStatus(isImporting = false, error = "Errore nel formato del file OPML")
                 onResult(0)
                 return@launch
+            } finally {
+                try {
+                    inputStream.close()
+                } catch (e: Exception) {
+                    // Ignore
+                }
             }
 
             if (urls.isEmpty()) {

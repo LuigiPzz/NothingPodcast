@@ -224,7 +224,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private var lastRecommendationSourceIds: Set<String>? = null
+
     private fun loadRecommendations(subscribed: List<Podcast>) {
+        val currentIds = subscribed.map { it.id }.toSet()
+        if (lastRecommendationSourceIds == currentIds) return
+        lastRecommendationSourceIds = currentIds
+        
         if (subscribed.isEmpty()) {
             _uiState.update { it.copy(recommendedPodcasts = emptyList()) }
             return

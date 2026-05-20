@@ -1,6 +1,8 @@
 package com.example.nothingpodcast.data.remote.rss
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.json.JSONObject
 import android.util.Xml
 import com.example.nothingpodcast.data.local.database.entity.EpisodeEntity
@@ -57,40 +59,43 @@ class RssFeedParser @Inject constructor(
             }
         }
         
-        // Fetch Podcasting 2.0 chapters concurrently
+        // Fetch Podcasting 2.0 chapters concurrently, limited to 5 at a time
+        val semaphore = kotlinx.coroutines.sync.Semaphore(5)
         val fetchJobs = rawEpisodesWithUrl.map { (ep, url) ->
             async(Dispatchers.IO) {
                 if (url.isNullOrBlank()) return@async ep
                 
-                try {
-                    val req = Request.Builder().url(url).build()
-                    okHttpClient.newCall(req).execute().use { resp ->
-                        if (resp.isSuccessful) {
-                            val json = resp.body?.string()
-                            if (json != null) {
-                                val jsonObject = JSONObject(json)
-                                if (jsonObject.has("chapters")) {
-                                    val chaptersArray = jsonObject.getJSONArray("chapters")
-                                    val extracted = mutableListOf<com.example.nothingpodcast.domain.model.Chapter>()
-                                    for (i in 0 until chaptersArray.length()) {
-                                        val chapterObj = chaptersArray.getJSONObject(i)
-                                        val title = chapterObj.optString("title")
-                                        val startTime = chapterObj.optLong("startTime")
-                                        if (title.isNotBlank()) {
-                                            extracted.add(com.example.nothingpodcast.domain.model.Chapter(title, startTime))
+                semaphore.withPermit {
+                    try {
+                        val req = Request.Builder().url(url).build()
+                        okHttpClient.newCall(req).execute().use { resp ->
+                            if (resp.isSuccessful) {
+                                val json = resp.body?.string()
+                                if (json != null) {
+                                    val jsonObject = JSONObject(json)
+                                    if (jsonObject.has("chapters")) {
+                                        val chaptersArray = jsonObject.getJSONArray("chapters")
+                                        val extracted = mutableListOf<com.example.nothingpodcast.domain.model.Chapter>()
+                                        for (i in 0 until chaptersArray.length()) {
+                                            val chapterObj = chaptersArray.getJSONObject(i)
+                                            val title = chapterObj.optString("title")
+                                            val startTime = chapterObj.optLong("startTime")
+                                            if (title.isNotBlank()) {
+                                                extracted.add(com.example.nothingpodcast.domain.model.Chapter(title, startTime))
+                                            }
                                         }
-                                    }
-                                    if (extracted.isNotEmpty()) {
-                                        return@async ep.copy(chaptersJson = com.google.gson.Gson().toJson(extracted))
+                                        if (extracted.isNotEmpty()) {
+                                            return@async ep.copy(chaptersJson = com.google.gson.Gson().toJson(extracted))
+                                        }
                                     }
                                 }
                             }
                         }
+                    } catch (e: Exception) {
+                        // Fallback to original
                     }
-                } catch (e: Exception) {
-                    // Fallback to original
+                    ep
                 }
-                ep
             }
         }
         
