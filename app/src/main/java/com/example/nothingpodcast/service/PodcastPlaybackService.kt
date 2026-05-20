@@ -519,6 +519,7 @@ class PodcastPlaybackService : MediaLibraryService() {
                         }
                     }
                 }
+                COMMAND_UPDATE_WIDGET -> updateWidget()
             }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -673,8 +674,9 @@ class PodcastPlaybackService : MediaLibraryService() {
         const val EXTRA_AUDIO_URI = "audio_uri"
         const val EXTRA_START_POSITION = "start_position"
         
-        const val COMMAND_SKIP_FORWARD = "com.example.nothingpodcast.SKIP_FORWARD"
+        const val COMMAND_SKIP_FORWARD  = "com.example.nothingpodcast.SKIP_FORWARD"
         const val COMMAND_SKIP_BACKWARD = "com.example.nothingpodcast.SKIP_BACKWARD"
-        const val COMMAND_PLAY_PAUSE = "com.example.nothingpodcast.PLAY_PAUSE"
+        const val COMMAND_PLAY_PAUSE    = "com.example.nothingpodcast.PLAY_PAUSE"
+        const val COMMAND_UPDATE_WIDGET = "com.example.nothingpodcast.UPDATE_WIDGET"
     }
 }

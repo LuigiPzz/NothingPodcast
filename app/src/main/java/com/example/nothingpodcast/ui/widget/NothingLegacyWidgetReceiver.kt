@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import android.widget.RemoteViews
 import com.example.nothingpodcast.R
 import com.example.nothingpodcast.service.PodcastPlaybackService
@@ -50,6 +51,19 @@ class NothingLegacyWidgetReceiver : AppWidgetProvider() {
         val skipForwardPending = PendingIntent.getForegroundService(context, 12, skipForwardIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.simple_btn_forward, skipForwardPending)
 
+        // Stato di default: mostra empty cover finché il service non aggiorna il contenuto reale
+        views.setViewVisibility(R.id.widget_empty_cover, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_player_container, View.GONE)
+
         appWidgetManager.updateAppWidget(appWidgetId, views)
+
+        // Notifica il service (se in esecuzione) di aggiornare il widget con i dati reali.
+        // Se il service non e' in esecuzione, il widget rimane nello stato empty appena impostato.
+        try {
+            val updateIntent = Intent(context, PodcastPlaybackService::class.java).apply {
+                action = PodcastPlaybackService.COMMAND_UPDATE_WIDGET
+            }
+            context.startService(updateIntent)
+        } catch (_: Exception) { /* service non avviabile in background, nessun problema */ }
     }
 }
