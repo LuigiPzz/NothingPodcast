@@ -25,6 +25,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v3 → v4: aggiunta colonne metadati estesi agli episodi
+         * (Podcast Namespace: chapters, transcript, soundbites, guid, season, episodeNumber, episodeType)
+         */
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE episodes ADD COLUMN fileSize INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN chaptersJson TEXT")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN transcriptUrl TEXT")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN transcriptType TEXT")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN soundbitesJson TEXT")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN podcastGuid TEXT")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN season INTEGER")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN episodeNumber INTEGER")
+                database.execSQL("ALTER TABLE episodes ADD COLUMN episodeType TEXT")
+            }
+        }
+
         val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE episodes ADD COLUMN lastPlayedAt INTEGER NOT NULL DEFAULT 0")

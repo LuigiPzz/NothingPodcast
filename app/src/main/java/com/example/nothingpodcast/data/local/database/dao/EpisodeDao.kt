@@ -64,7 +64,7 @@ interface EpisodeDao {
     @Query("UPDATE episodes SET playbackPosition = :position, lastPlayedAt = :lastPlayed WHERE id = :id")
     suspend fun updatePlaybackPosition(id: String, position: Long, lastPlayed: Long = System.currentTimeMillis())
 
-    @Query("SELECT * FROM episodes ORDER BY lastPlayedAt DESC LIMIT 1")
+    @Query("SELECT * FROM episodes WHERE lastPlayedAt > 0 ORDER BY lastPlayedAt DESC LIMIT 1")
     suspend fun getLastPlayedEpisode(): EpisodeEntity?
 
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND isDownloaded = 1")

@@ -530,9 +530,9 @@ class PodcastPlaybackService : MediaLibraryService() {
         if (id != null && ::player.isInitialized) {
             val posMs = try { player.currentPosition } catch (e: Exception) { 0L }
             if (posMs > 0) {
-                // Use GlobalScope for the final save to ensure it finishes after service is destroyed
-                GlobalScope.launch(Dispatchers.IO) {
-                    episodeRepository.savePlaybackPosition(id, posMs / 1000L)
+                // runBlocking garantisce che il salvataggio sia completato prima che il processo venga terminato
+                runBlocking(Dispatchers.IO) {
+                    runCatching { episodeRepository.savePlaybackPosition(id, posMs / 1000L) }
                 }
             }
         }

@@ -39,8 +39,14 @@ class DownloadWorker @AssistedInject constructor(
         try {
             val request = Request.Builder().url(audioUrl).build()
             okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext Result.retry()
-                val body = response.body ?: return@withContext Result.retry()
+                if (!response.isSuccessful) {
+                    outputFile.delete()
+                    return@withContext Result.retry()
+                }
+                val body = response.body ?: run {
+                    outputFile.delete()
+                    return@withContext Result.retry()
+                }
                 val totalBytes = body.contentLength()
                 var downloadedBytes = 0L
                 var lastGlyphUpdate = 0

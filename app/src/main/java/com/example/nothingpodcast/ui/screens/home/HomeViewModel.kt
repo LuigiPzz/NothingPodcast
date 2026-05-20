@@ -7,6 +7,8 @@ import com.example.nothingpodcast.data.repository.PodcastRepository
 import com.example.nothingpodcast.domain.model.Podcast
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -156,9 +158,10 @@ class HomeViewModel @Inject constructor(
     fun refreshAll() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            _uiState.value.subscribedPodcasts.forEach { podcast ->
-                runCatching { podcastRepository.refreshEpisodes(podcast) }
-            }
+            // Refresh tutti i podcast in parallelo per ridurre i tempi di attesa
+            _uiState.value.subscribedPodcasts
+                .map { podcast -> async { runCatching { podcastRepository.refreshEpisodes(podcast) } } }
+                .awaitAll()
             _uiState.update { it.copy(isRefreshing = false) }
         }
     }

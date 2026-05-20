@@ -50,15 +50,8 @@ class PodcastRepository @Inject constructor(
     }
 
     suspend fun subscribeByUrl(feedUrl: String) {
-        try {
-            // 1. Fetch metadata
-            val podcast = rssFeedParser.fetchPodcastMetadata(feedUrl)
-            // 2. Subscribe
-            subscribe(podcast)
-        } catch (e: Exception) {
-            // Rethrow or handle
-            throw e
-        }
+        val podcast = rssFeedParser.fetchPodcastMetadata(feedUrl)
+        subscribe(podcast)
     }
 
     suspend fun unsubscribe(podcastId: String) {

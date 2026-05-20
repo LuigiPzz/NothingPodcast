@@ -24,7 +24,8 @@ class SyncRepository @Inject constructor(
     data class SyncData(
         val version: Int = 1,
         val podcasts: List<PodcastSyncInfo>,
-        val settings: Map<String, Any?>
+        val settings: Map<String, Any?>,
+        val lastSyncTimestamp: Long = 0L
     )
 
     data class PodcastSyncInfo(
@@ -50,7 +51,11 @@ class SyncRepository @Inject constructor(
                 totalEpisodes = total
             )
         }
-        val data = SyncData(podcasts = syncInfo, settings = emptyMap())
+        val data = SyncData(
+            podcasts = syncInfo,
+            settings = emptyMap(),
+            lastSyncTimestamp = System.currentTimeMillis()
+        )
         driveService.uploadSyncFile(account, gson.toJson(data))
     }
 
@@ -72,7 +77,7 @@ class SyncRepository @Inject constructor(
             podcastCount = data.podcasts.size,
             playedEpisodeCount = totalPlayedInCloud,
             totalEpisodeCount = totalEpisodesInCloud,
-            lastSyncTimestamp = System.currentTimeMillis() // Placeholder
+            lastSyncTimestamp = data.lastSyncTimestamp
         )
     }
 

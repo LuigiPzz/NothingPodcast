@@ -51,7 +51,8 @@ object WorkScheduler {
         wifiOnly: Boolean
     ) {
         val workManager = WorkManager.getInstance(context)
-        val fileName = "${episodeId.hashCode()}.mp3"
+        // Usa episodeId sanitizzato (invece di hashCode) per evitare collisioni tra episodi diversi
+        val fileName = "${episodeId.replace(Regex("[^a-zA-Z0-9_-]"), "_")}.mp3"
         val inputData = workDataOf(
             com.example.nothingpodcast.worker.DownloadWorker.KEY_EPISODE_ID to episodeId,
             com.example.nothingpodcast.worker.DownloadWorker.KEY_AUDIO_URL to audioUrl,
