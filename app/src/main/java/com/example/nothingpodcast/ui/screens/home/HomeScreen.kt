@@ -136,7 +136,6 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-
                 if (uiState.isEditMode) {
                     TextButton(onClick = viewModel::saveOrder) {
                         Text("FINE", style = MaterialTheme.typography.labelLarge)
@@ -145,8 +144,10 @@ fun HomeScreen(
                     ViewModeMenu(
                         currentMode        = uiState.viewMode,
                         showGridLabels     = uiState.showGridLabels,
+                        sortOrder          = uiState.sortOrder,
                         onViewModeChange   = viewModel::setViewMode,
-                        onToggleGridLabels = viewModel::toggleGridLabels
+                        onToggleGridLabels = viewModel::toggleGridLabels,
+                        onSortOrderChange  = viewModel::setSortOrder
                     )
                 }
             }
@@ -555,8 +556,10 @@ private fun DottedLetter(
 private fun ViewModeBottomSheet(
     currentMode:        PodcastViewMode,
     showGridLabels:     Boolean,
+    sortOrder:          PodcastSortOrder,
     onViewModeChange:   (PodcastViewMode) -> Unit,
     onToggleGridLabels: () -> Unit,
+    onSortOrderChange:  (PodcastSortOrder) -> Unit,
     onDismiss:          () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -689,16 +692,65 @@ private fun ViewModeBottomSheet(
                     }
                 }
             }
+            // ── Sorting ──────────────────────────────────────────────────
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp)
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text     = "ORDINAMENTO",
+                style    = MaterialTheme.typography.titleMedium,
+                color    = NothingWhite,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, NothingBorderDim, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(NothingBlack),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PodcastSortOrder.entries.forEachIndexed { index, order ->
+                    val isSelected = order == sortOrder
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(if (isSelected) NothingWhite else NothingBlack)
+                            .clickable { onSortOrderChange(order) }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text       = order.label.uppercase(),
+                            style      = MaterialTheme.typography.labelMedium,
+                            color      = if (isSelected) NothingBlack else NothingWhite,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                    if (index < PodcastSortOrder.entries.size - 1) {
+                        Spacer(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(28.dp)
+                                .background(NothingBorderDim)
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun ViewModeMenu(
-    currentMode:        PodcastViewMode,
-    showGridLabels:     Boolean,
-    onViewModeChange:   (PodcastViewMode) -> Unit,
-    onToggleGridLabels: () -> Unit
+    currentMode:       PodcastViewMode,
+    showGridLabels:    Boolean,
+    sortOrder:         PodcastSortOrder,
+    onViewModeChange:  (PodcastViewMode) -> Unit,
+    onToggleGridLabels: () -> Unit,
+    onSortOrderChange: (PodcastSortOrder) -> Unit
 ) {
     var showSheet by remember { mutableStateOf(false) }
 
@@ -711,8 +763,10 @@ private fun ViewModeMenu(
             ViewModeBottomSheet(
                 currentMode        = currentMode,
                 showGridLabels     = showGridLabels,
+                sortOrder          = sortOrder,
                 onViewModeChange   = onViewModeChange,
                 onToggleGridLabels = onToggleGridLabels,
+                onSortOrderChange  = onSortOrderChange,
                 onDismiss          = { showSheet = false }
             )
         }

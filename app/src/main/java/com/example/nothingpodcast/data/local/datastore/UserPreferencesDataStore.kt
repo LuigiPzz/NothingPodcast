@@ -28,6 +28,7 @@ class UserPreferencesDataStore @Inject constructor(
         val SLEEP_TIMER_MINUTES     = intPreferencesKey("sleep_timer_minutes")
         val PLAYBACK_SPEED          = stringPreferencesKey("playback_speed")
         val PODCAST_VIEW_MODE       = stringPreferencesKey("podcast_view_mode")
+        val PODCAST_SORT_ORDER      = stringPreferencesKey("podcast_sort_order")
         val GRID_SHOW_LABELS        = booleanPreferencesKey("grid_show_labels")
         val LOGGING_ENABLED         = booleanPreferencesKey("logging_enabled")
         val HAS_SEEN_ONBOARDING     = booleanPreferencesKey("has_seen_onboarding")
@@ -62,6 +63,9 @@ class UserPreferencesDataStore @Inject constructor(
 
     val podcastViewMode: Flow<String> = context.dataStore.data
         .map { it[Keys.PODCAST_VIEW_MODE] ?: "GRID3" }
+
+    val podcastSortOrder: Flow<String> = context.dataStore.data
+        .map { it[Keys.PODCAST_SORT_ORDER] ?: "CUSTOM" }
 
     val gridShowLabels: Flow<Boolean> = context.dataStore.data
         .map { it[Keys.GRID_SHOW_LABELS] ?: false }
@@ -118,6 +122,10 @@ class UserPreferencesDataStore @Inject constructor(
 
     suspend fun setPodcastViewMode(mode: String) {
         context.dataStore.edit { it[Keys.PODCAST_VIEW_MODE] = mode }
+    }
+
+    suspend fun setPodcastSortOrder(order: String) {
+        context.dataStore.edit { it[Keys.PODCAST_SORT_ORDER] = order }
     }
 
     suspend fun setGridShowLabels(show: Boolean) {

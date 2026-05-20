@@ -21,6 +21,13 @@ enum class PodcastViewMode(val columns: Int, val label: String) {
     GRID5(5, "GRID  5×")
 }
 
+enum class PodcastSortOrder(val label: String) {
+    CUSTOM("Manuale"),
+    A_Z("A → Z"),
+    Z_A("Z → A"),
+    RECENT("Recente")
+}
+
 // ── UI state ──────────────────────────────────────────────────────────────────
 
 data class HomeUiState(
@@ -33,7 +40,8 @@ data class HomeUiState(
     val isRefreshing:       Boolean        = false,
     val error:              String?        = null,
     val showSearchSheet:    Boolean        = false,
-    val viewMode:           PodcastViewMode = PodcastViewMode.GRID3,
+    val viewMode:           PodcastViewMode  = PodcastViewMode.GRID3,
+    val sortOrder:          PodcastSortOrder = PodcastSortOrder.CUSTOM,
     val showGridLabels:     Boolean        = false,
     val isEditMode:         Boolean        = false,
     val isLoadingRecommendations: Boolean  = false
@@ -54,20 +62,31 @@ class HomeViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
 
     init {
-        // Observe subscribed podcasts
+        // Observe subscribed podcasts + sort order together
         viewModelScope.launch {
-            podcastRepository.getSubscribedPodcasts()
-                .catch { e -> _uiState.update { it.copy(error = e.message) } }
-                .collect { podcasts ->
-                    // Only update from DB if not currently reordering
-                    if (!_uiState.value.isEditMode) {
-                        _uiState.update { it.copy(subscribedPodcasts = podcasts) }
-                        if (podcasts.isEmpty() && _uiState.value.suggestedPodcasts.isEmpty()) {
-                            loadSuggestions()
-                        }
-                        loadRecommendations(podcasts)
-                    }
+            combine(
+                podcastRepository.getSubscribedPodcasts(),
+                preferences.podcastSortOrder
+            ) { podcasts, sortName ->
+                val sort = runCatching { PodcastSortOrder.valueOf(sortName) }.getOrDefault(PodcastSortOrder.CUSTOM)
+                val sorted = when (sort) {
+                    PodcastSortOrder.CUSTOM -> podcasts
+                    PodcastSortOrder.A_Z    -> podcasts.sortedBy { it.title.lowercase() }
+                    PodcastSortOrder.Z_A    -> podcasts.sortedByDescending { it.title.lowercase() }
+                    PodcastSortOrder.RECENT -> podcasts.sortedByDescending { it.lastUpdated }
                 }
+                Pair(sorted, sort)
+            }
+            .catch { e -> _uiState.update { it.copy(error = e.message) } }
+            .collect { (podcasts, sort) ->
+                if (!_uiState.value.isEditMode) {
+                    _uiState.update { it.copy(subscribedPodcasts = podcasts, sortOrder = sort) }
+                    if (podcasts.isEmpty() && _uiState.value.suggestedPodcasts.isEmpty()) {
+                        loadSuggestions()
+                    }
+                    loadRecommendations(podcasts)
+                }
+            }
         }
 
         // Observe persisted view mode
@@ -156,6 +175,12 @@ class HomeViewModel @Inject constructor(
     fun toggleGridLabels() {
         viewModelScope.launch {
             preferences.setGridShowLabels(!_uiState.value.showGridLabels)
+        }
+    }
+
+    fun setSortOrder(order: PodcastSortOrder) {
+        viewModelScope.launch {
+            preferences.setPodcastSortOrder(order.name)
         }
     }
 
