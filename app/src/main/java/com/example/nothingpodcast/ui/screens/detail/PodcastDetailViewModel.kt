@@ -217,6 +217,11 @@ class PodcastDetailViewModel @Inject constructor(
         }
     }
 
+    fun cancelDownload(episodeId: String) {
+        workManager.cancelUniqueWork(DownloadWorker.tag(episodeId))
+    }
+
+
     fun setShowFilterSheet(show: Boolean) {
         _showFilterSheet.value = show
     }

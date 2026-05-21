@@ -46,7 +46,7 @@ class PodcastRepository @Inject constructor(
             isSubscribed = true,
             orderIndex = maxIndex + 1
         ).toEntity())
-        refreshEpisodes(podcast)
+        refreshEpisodes(podcast, isFirstSync = true)
     }
 
     suspend fun subscribeByUrl(feedUrl: String) {
@@ -94,7 +94,7 @@ class PodcastRepository @Inject constructor(
     // ── Episode refresh ───────────────────────────────────────────────────
 
     /** Returns Pair(count of new episodes, title of latest new episode) */
-    suspend fun refreshEpisodes(podcast: Podcast): Pair<Int, String?> {
+    suspend fun refreshEpisodes(podcast: Podcast, isFirstSync: Boolean = false): Pair<Int, String?> {
         val episodes = rssFeedParser.parseEpisodes(
             feedUrl       = podcast.feedUrl,
             podcastId     = podcast.id,
@@ -106,7 +106,7 @@ class PodcastRepository @Inject constructor(
         
         val newCount = newEpisodes.size
 
-        if (newCount > 0) {
+        if (newCount > 0 && !isFirstSync) {
             val autoDownload = preferencesDataStore.autoDownloadEnabled.first()
             if (autoDownload) {
                 val wifiOnly = preferencesDataStore.autoDownloadWifiOnly.first()

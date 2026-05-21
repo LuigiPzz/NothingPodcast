@@ -324,7 +324,8 @@ fun PodcastDetailScreen(
                                 },
                                 onMarkUnplayed = { viewModel.markEpisodeUnplayed(episode.id) },
                                 onDownload     = { viewModel.downloadEpisode(episode) },
-                                onDeleteDownload = { viewModel.deleteDownload(episode) } 
+                                onDeleteDownload = { viewModel.deleteDownload(episode) },
+                                onCancelDownload = { viewModel.cancelDownload(episode.id) }
                             )
                         }
                         HorizontalDivider(color = NothingBorderDim, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 24.dp))
@@ -453,7 +454,8 @@ private fun EpisodeListItem(
     onMarkPlayed: () -> Unit,
     onMarkUnplayed: () -> Unit,
     onDownload: () -> Unit,
-    onDeleteDownload: () -> Unit
+    onDeleteDownload: () -> Unit,
+    onCancelDownload: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     val dateStr    = remember(episode.publishDate) {
@@ -621,6 +623,7 @@ private fun EpisodeListItem(
                     .clickable { 
                         if (isPlaying) onPause()
                         else if (episode.isDownloaded) onPlay() 
+                        else if (downloadProgress != null) onCancelDownload()
                         else onDownload()
                     },
                 contentAlignment = Alignment.Center

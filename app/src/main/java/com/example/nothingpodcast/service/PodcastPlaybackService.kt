@@ -133,6 +133,28 @@ class PodcastPlaybackService : MediaLibraryService() {
                 }
             }
 
+            override fun onAddMediaItems(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo,
+                mediaItems: MutableList<MediaItem>
+            ): ListenableFuture<MutableList<MediaItem>> {
+                com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onAddMediaItems from ${controller.packageName} for ${mediaItems.size} items")
+                return serviceScope.future {
+                    mediaItems.map { mediaItem ->
+                        if (mediaItem.localConfiguration?.uri != null) {
+                            mediaItem
+                        } else {
+                            val episode = episodeRepository.getEpisodeById(mediaItem.mediaId)
+                            if (episode != null) {
+                                episode.toMediaItem()
+                            } else {
+                                mediaItem
+                            }
+                        }
+                    }.toMutableList()
+                }
+            }
+
             override fun onSetMediaItems(
                 mediaSession: MediaSession,
                 controller: MediaSession.ControllerInfo,
@@ -163,12 +185,14 @@ class PodcastPlaybackService : MediaLibraryService() {
             ): MediaSession.ConnectionResult {
                 com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onConnect from ${controller.packageName} (isAuto: ${controller.packageName.contains("projection")})")
                 
-                val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                val connectionResult = super.onConnect(session, controller)
+                val sessionCommands = connectionResult.availableSessionCommands.buildUpon()
                     .add(SessionCommand(COMMAND_SKIP_FORWARD, android.os.Bundle.EMPTY))
                     .add(SessionCommand(COMMAND_SKIP_BACKWARD, android.os.Bundle.EMPTY))
                     .build()
                 return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setAvailableSessionCommands(sessionCommands)
+                    .setAvailablePlayerCommands(connectionResult.availablePlayerCommands)
                     .build()
             }
 
@@ -611,6 +635,7 @@ class PodcastPlaybackService : MediaLibraryService() {
     private fun getRootItem(): MediaItem = MediaItem.Builder()
         .setMediaId(ROOT_ID)
         .setMediaMetadata(MediaMetadata.Builder()
+            .setTitle("Root")
             .setIsBrowsable(true)
             .setIsPlayable(false)
             .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)

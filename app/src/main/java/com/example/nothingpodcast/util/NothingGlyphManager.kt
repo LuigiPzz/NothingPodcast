@@ -10,12 +10,15 @@ import com.nothing.ketchum.Common
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.*
 
 @Singleton
 class NothingGlyphManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var glyphManager: GlyphManager? = null
+    private val glyphScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var downloadAnimationJob: Job? = null
     private var isInitialized = false
     private var isSessionOpen = false
 
@@ -144,27 +147,38 @@ class NothingGlyphManager @Inject constructor(
         } catch (e: Exception) {}
     }
 
-    private var downloadPhase = 0
-
-    /**
-     * Sequential animation for downloads: A -> B -> C -> A -> B -> C...
-     */
-    fun showDownloadProgress(progress: Int) {
+    fun startDownloadAnimation() {
         if (!isInitialized) return
-        try {
+        stopDownloadAnimation()
+        
+        downloadAnimationJob = glyphScope.launch {
             openSession()
-            val builder = glyphManager?.getGlyphFrameBuilder() ?: return
-            
-            // Cycle through A, B, C regardless of exact progress value
-            when (downloadPhase % 3) {
-                0 -> builder.buildChannelA()
-                1 -> builder.buildChannelB()
-                2 -> builder.buildChannelC()
+            var step = 0
+            while (isActive) {
+                try {
+                    val builder = glyphManager?.getGlyphFrameBuilder() ?: break
+                    when (step % 3) {
+                        0 -> builder.buildChannelA()
+                        1 -> builder.buildChannelB()
+                        2 -> builder.buildChannelC()
+                    }
+                    step++
+                    builder.buildPeriod(150)
+                    glyphManager?.animate(builder.build())
+                } catch (e: Exception) {
+                    android.util.Log.e("NothingGlyphManager", "Error in download animation step", e)
+                }
+                delay(200)
             }
-            downloadPhase++
-            
-            builder.buildPeriod(400) // Faster, distinct flashes
-            glyphManager?.animate(builder.build())
+        }
+    }
+
+    fun stopDownloadAnimation() {
+        downloadAnimationJob?.cancel()
+        downloadAnimationJob = null
+        try {
+            val offBuilder = glyphManager?.getGlyphFrameBuilder() ?: return
+            glyphManager?.toggle(offBuilder.build())
         } catch (e: Exception) {}
     }
 

@@ -37,19 +37,21 @@ class DownloadWorker @AssistedInject constructor(
         val outputFile = File(outputDir, fileName)
 
         try {
+            glyphManager.startDownloadAnimation()
             val request = Request.Builder().url(audioUrl).build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     outputFile.delete()
+                    glyphManager.stopDownloadAnimation()
                     return@withContext Result.retry()
                 }
                 val body = response.body ?: run {
                     outputFile.delete()
+                    glyphManager.stopDownloadAnimation()
                     return@withContext Result.retry()
                 }
                 val totalBytes = body.contentLength()
                 var downloadedBytes = 0L
-                var lastGlyphUpdate = 0
 
                 FileOutputStream(outputFile).use { fos ->
                     body.byteStream().use { input ->
@@ -65,12 +67,6 @@ class DownloadWorker @AssistedInject constructor(
                                     KEY_PROGRESS to progress,
                                     KEY_EPISODE_ID to episodeId
                                 ))
-                                
-                                // Update LEDs every 2% for a smooth "flowing" effect
-                                if (progress >= lastGlyphUpdate + 2) {
-                                    glyphManager.showDownloadProgress(progress)
-                                    lastGlyphUpdate = progress
-                                }
                             }
                         }
                     }
@@ -79,6 +75,7 @@ class DownloadWorker @AssistedInject constructor(
             episodeRepository.markDownloaded(episodeId, outputFile.absolutePath)
             
             // All LEDs on!
+            glyphManager.stopDownloadAnimation()
             glyphManager.showDownloadComplete()
 
             try {
@@ -95,7 +92,9 @@ class DownloadWorker @AssistedInject constructor(
             
             Result.success(workDataOf(KEY_FILE_PATH to outputFile.absolutePath))
         } catch (e: Exception) {
+            glyphManager.stopDownloadAnimation()
             outputFile.delete()
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unknown error")))
         }
     }
