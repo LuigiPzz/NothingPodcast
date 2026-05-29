@@ -93,11 +93,16 @@ class PodcastPlaybackService : MediaLibraryService() {
                 com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: onGetChildren for parentId: $parentId")
                 return serviceScope.future {
                     val children = when (parentId) {
-                        ROOT_ID -> listOf(getSubscriptionsCategory(), getDownloadsCategory())
+                        ROOT_ID -> {
+                            val downloadedEpisodes = episodeRepository.getDownloadedEpisodes().first()
+                            val podcastIds = downloadedEpisodes.map { it.podcastId }.distinct()
+                            podcastIds.mapNotNull { podcastRepository.getPodcastById(it)?.toMediaItem() }
+                        }
                         ID_SUBSCRIPTIONS -> podcastRepository.getSubscribedPodcasts().first().map { it.toMediaItem() }
                         ID_DOWNLOADS -> episodeRepository.getDownloadedEpisodes().first().map { it.toMediaItem() }
                         else -> {
-                            episodeRepository.getEpisodesForPodcast(parentId).first().map { it.toMediaItem() }
+                            val downloadedEpisodes = episodeRepository.getDownloadedEpisodes().first()
+                            downloadedEpisodes.filter { it.podcastId == parentId }.map { it.toMediaItem() }
                         }
                     }
                     com.example.nothingpodcast.util.AppLogger.log(this@PodcastPlaybackService, "INFO", "PlaybackService: returning ${children.size} children for $parentId")
@@ -632,15 +637,22 @@ class PodcastPlaybackService : MediaLibraryService() {
 
     // ── Media Item Mappers ───────────────────────────────────────────────
 
-    private fun getRootItem(): MediaItem = MediaItem.Builder()
-        .setMediaId(ROOT_ID)
-        .setMediaMetadata(MediaMetadata.Builder()
-            .setTitle("Root")
-            .setIsBrowsable(true)
-            .setIsPlayable(false)
-            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
-            .build())
-        .build()
+    private fun getRootItem(): MediaItem {
+        val extras = android.os.Bundle().apply {
+            putInt("android.media.browse.CONTENT_STYLE_BROWSABLE_HINT", 2)
+            putInt("android.media.browse.CONTENT_STYLE_PLAYABLE_HINT", 1)
+        }
+        return MediaItem.Builder()
+            .setMediaId(ROOT_ID)
+            .setMediaMetadata(MediaMetadata.Builder()
+                .setTitle("Root")
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
+                .setExtras(extras)
+                .build())
+            .build()
+    }
 
     private fun getSubscriptionsCategory(): MediaItem = MediaItem.Builder()
         .setMediaId(ID_SUBSCRIPTIONS)
@@ -662,17 +674,23 @@ class PodcastPlaybackService : MediaLibraryService() {
             .build())
         .build()
 
-    private fun Podcast.toMediaItem(): MediaItem = MediaItem.Builder()
-        .setMediaId(id)
-        .setMediaMetadata(MediaMetadata.Builder()
-            .setTitle(title)
-            .setSubtitle(author)
-            .setArtworkUri(android.net.Uri.parse(imageUrl))
-            .setIsBrowsable(true)
-            .setIsPlayable(false)
-            .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
-            .build())
-        .build()
+    private fun Podcast.toMediaItem(): MediaItem {
+        val extras = android.os.Bundle().apply {
+            putInt("android.media.browse.CONTENT_STYLE_PLAYABLE_HINT", 1)
+        }
+        return MediaItem.Builder()
+            .setMediaId(id)
+            .setMediaMetadata(MediaMetadata.Builder()
+                .setTitle(title)
+                .setSubtitle(author)
+                .setArtworkUri(android.net.Uri.parse(imageUrl))
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .setFolderType(MediaMetadata.FOLDER_TYPE_MIXED)
+                .setExtras(extras)
+                .build())
+            .build()
+    }
 
     private fun Episode.toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(id)
